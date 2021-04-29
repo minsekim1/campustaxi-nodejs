@@ -1,0 +1,13 @@
+id  					int AI PK
+created_at 		datetime(6)
+updated_at 		datetime(6)
+massage 			longtext
+massage_type 	varchar(6)
+is_deleted 		tiny int (1) 
+deleted_at 		datetime(6) 
+created_by_id  int 
+room_id  			int 
+updated_by_id int 
+
+use campustaxi_db;
+INSERT INTO `campustaxi_db`.`massage_tb` (`massage`, `room_id`,`created_at`, `massage_type`, `is_deleted`) VALUES ('hi~!', 75, now(), 'NORMAL', false);

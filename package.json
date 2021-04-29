@@ -1,0 +1,16 @@
+{
+  "name": "socket-chat-example",
+  "version": "0.0.1",
+  "description": "my first socket.io app",
+  "dependencies": {
+    "express": "^4.17.1",
+    "fcm-node": "^1.6.1",
+    "firebase": "^8.4.2",
+    "firebase-admin": "^9.7.0",
+    "mysql": "^2.18.1",
+    "socket.io": "^3.0.3"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
