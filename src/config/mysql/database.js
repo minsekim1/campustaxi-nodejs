@@ -1,7 +1,7 @@
 var mysql = require('mysql');
 
 const fs = require('fs')
-const key = JSON.parse(fs.readFileSync('./config/mysql/secrets_nodejs.json'));
+const key = JSON.parse(fs.readFileSync('./src/config/mysql/secrets_nodejs.json'));
 
 var db_info = {
 	host: key.DATABASE_HOST,
