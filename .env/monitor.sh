@@ -1,0 +1,1 @@
+cd .. && pm2 monit && cd .env

@@ -1,0 +1,1 @@
+cd .. && ts-node ../src/index.ts && cd .env
