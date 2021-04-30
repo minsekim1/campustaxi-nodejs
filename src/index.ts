@@ -62,8 +62,8 @@ app.prepare().then(() => {
   //#endregion API 설정
 
   //#region 웹소켓 설정
-
-  const io = require("socket.io")(port);
+  const httpServer = require("http").createServer();
+  const io = require("socket.io")(httpServer);
   type Connection = {
     room_id: string;
     username: string;
@@ -159,14 +159,6 @@ app.prepare().then(() => {
             // click_action: "string",
             // icon: ""
           });
-          // fetch(key.fcm_uri, {
-          //   method: "POST",
-          //   headers: {
-          //     Accept: "application/json",
-          //     Authorization: `Bearer ${accessToken}`,
-          //   },
-          //   body: JSON.stringify(message),
-          // });
           // 웹소켓 채팅 데이터 전송
           io.to(user.socket_id).emit("chat", {
             username: props.username,
@@ -226,5 +218,7 @@ app.prepare().then(() => {
       process.exit(err ? 1 : 0);
     });
   });
+  
+  httpServer.listen(3000);
 });
 //#endregion  서버 배포 설정

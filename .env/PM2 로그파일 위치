@@ -1,0 +1,2 @@
+/Users/minsekim/.pm2/logs/app-out-1.log 또는 
+pm2 logs app --lines 5 실행
