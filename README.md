@@ -15,6 +15,11 @@ sudo npm install -g ts-node
 ```
 
 ## !설정 파일 옮겨야함
-firebaseConfig.json
-secrets_nodejs.json
-serverKey.json
+```
+firebase
+ㄴ firebaseConfig.json
+ㄴ serverKey.json
+
+mysql
+ㄴ secrets_nodejs.json
+```
