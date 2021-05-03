@@ -11,7 +11,8 @@ cd campustaxi-nodejs &&  \
 npm install --save react react-dom @types/react @types/react-dom && \
 npm install && \
 mkdir pages && \
-sudo npm install -g ts-node
+sudo npm install -g ts-node && \
+sudo npm install -g pm2
 ```
 
 ## 우분투 선택 사항
