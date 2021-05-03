@@ -14,6 +14,11 @@ mkdir pages && \
 sudo npm install -g ts-node
 ```
 
+## 우분투 선택 사항
+```
+sudo apt upgrade
+```
+
 ## !설정 파일 옮겨야함
 ```
 firebase
