@@ -5,11 +5,11 @@ const app = next({ dev });
 const port = 3000;
 import { send } from "./config/firebase/firebase";
 //#region     서버 배포 설정
-
 app.prepare().then(() => {
   const server = express();
   const http = require("http").Server(app);
   let isAppGoingToBeClosed = false; // SIGINT 시그널을 받았는지 여부. 앱이 곧 종료될 것임을 의미한다.
+
 
   server.use(function (req: any, res: any, next: any) {
     // 프로세스 종료 예정이라면 리퀘스트를 처리하지 않는다

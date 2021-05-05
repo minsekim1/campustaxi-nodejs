@@ -11,7 +11,7 @@ var db_info = {
 	database: key.DATABASE_NAME
 }
 
-console.log(db_info)
+// console.log(db_info)
 module.exports = {
 	init: function () {
 		return mysql.createConnection(db_info);
