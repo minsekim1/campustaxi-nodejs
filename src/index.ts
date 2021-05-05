@@ -4,12 +4,14 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import { send } from "./config/firebase/firebase";
+import { sql_message_insert } from "./types/Message";
+import { sql_userid_get, User } from "./types/User";
+
 //#region     서버 배포 설정
 app.prepare().then(() => {
   const server = express();
   const http = require("http").Server(app);
   let isAppGoingToBeClosed = false; // SIGINT 시그널을 받았는지 여부. 앱이 곧 종료될 것임을 의미한다.
-
 
   server.use(function (req: any, res: any, next: any) {
     // 프로세스 종료 예정이라면 리퀘스트를 처리하지 않는다
@@ -32,32 +34,28 @@ app.prepare().then(() => {
   //#region 서버 연동 설정
 
   var db_config = require("./config/mysql/database.js");
-  var conn = db_config.init();
-  db_config.connect(conn);
+  var db_conn = db_config.init();
+  db_config.connect(db_conn);
 
   //#endregion 서버 연동 설정
 
   //#region API 설정
-  var responseData = { result: 0, data: "" };
-  const messsage_query = (query: string) =>
-    conn.query(query, function (err: any, rows: string) {
-      if (err) throw err;
-      if (rows.length) {
-        console.log(rows);
-        responseData.result = 1;
-        responseData.data = rows;
-      } else {
-        responseData.result = 0;
-      }
-      console.log("responseData", responseData);
-    });
-  const get_message_all = () => {
-    messsage_query(
-      "INSERT INTO `campustaxi_db`.`massage_tb` (`massage`, `room_id`,`created_at`, `massage_type`, `is_deleted`) VALUES ('hi~!', 75, now(), 'NORMAL', false);"
-    );
-    messsage_query("select * from massage_tb");
-  };
-  // get_message_all();
+
+  // const messsage_insert = (msg, room_id) => {
+  //   // id
+  //   // created_at
+  //   // updated_at
+  //   // massage
+  //   // massage_type
+  //   // is_deleted
+  //   // deleted_at
+  //   // created_by_id
+  //   // room_id
+  //   // updated_by_id
+  //   messsage_query(
+  //     "INSERT INTO `campustaxi_db`.`massage_tb` (`massage`, `room_id`,`created_at`, `massage_type`, `is_deleted`) VALUES ('hi~!', 75, now(), 'NORMAL', false);"
+  //   );
+  // };
 
   //#endregion API 설정
 
@@ -71,7 +69,7 @@ app.prepare().then(() => {
     socket_id: string;
     enterTime: Date;
   };
-  var clients = new Map<string, Connection[]>(); // key: socket_id value: 1개 방
+  var clients = new Map<string, Connection>(); // key: socket_id value: 1개 방
   var rooms = new Map<string, Connection[]>(); // key: room_id value: 여러개 소켓
 
   io.on("connection", (socket: any) => {
@@ -80,13 +78,13 @@ app.prepare().then(() => {
     socket.on("enter", async function (conn: Connection) {
       console.log(
         new Date().toLocaleString(),
-        "]enter/room_id/",
+        "]enter/",
         conn.room_id,
-        "/username/",
+        "/",
         conn.username,
-        "/socket_id/",
+        "/",
         socket.id,
-        "/firebaseToken/",
+        "/",
         !!conn.firebaseToken
       );
 
@@ -100,18 +98,30 @@ app.prepare().then(() => {
       new_connect.username = conn.username;
       new_connect.firebaseToken = conn.firebaseToken;
 
-      //#region 중복 닉네임 접속 시 이전 소켓 삭제
-      rooms.get(conn.room_id)?.map((room: Connection) => {
-        if (room.username == conn.username) {
-          clients.delete(room.socket_id);
-          rooms
-            .get(room.room_id)
-            ?.filter((r: Connection) => r.username != conn.username);
-        }
-      });
+      //#region 중복 닉네임 접속 시 이전 소켓과 방 삭제
+
+      //clients 중복
+      let client_room = clients.get(conn.username);
+      if (client_room != undefined) {
+        let members = rooms.get(client_room.room_id);
+        if (members != undefined)
+          rooms.set(
+            client_room.room_id,
+            members.filter((c: Connection) => c.username != conn.username)
+          );
+        clients.delete(conn.username);
+      }
+      // rooms 중복
+      let members = rooms.get(conn.room_id);
+      if (members != undefined)
+        rooms.set(
+          conn.room_id,
+          members.filter((c: Connection) => c.username != conn.username)
+        );
+
       //#endregion 중복 닉네임 접속 시 이전 소켓 삭제
 
-      clients.set(socket.id, new_connect);
+      clients.set(conn.username, new_connect);
       rooms.get(conn.room_id)?.push(new_connect);
 
       let enter_send_user = rooms.get(conn.room_id);
@@ -122,7 +132,6 @@ app.prepare().then(() => {
             date: new Date(),
           })
         );
-      // console.log("enter ", socket.id, "rooms:", rooms, "clients:", clients);
     });
     //#endregion 사용자 접속
 
@@ -139,58 +148,103 @@ app.prepare().then(() => {
       // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
       console.log(
         new Date().toLocaleString(),
-        "]chat /room_id/",
+        "]chat /",
         props.room_id,
-        "/username/",
+        "/",
         props.username,
-        "/socket_id/",
+        "/",
         socket.id,
-        "/msg",
+        "/",
         props.msg
       );
       let chat_send_user = rooms.get(props.room_id);
       if (chat_send_user != undefined)
         chat_send_user.map((user) => {
-          //Firebase 토큰 FCM 전송
-          send({
-            clientToken: user.firebaseToken,
-            title: props.username,
-            mesage: props.msg,
-            // click_action: "string",
-            // icon: ""
-          });
-          // 웹소켓 채팅 데이터 전송
+          //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
+          if (user.username != props.username)
+            send({
+              clientToken: user.firebaseToken,
+              title: props.username,
+              mesage: props.msg,
+              // click_action: "string",
+              // icon: ""
+            });
+          // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
           io.to(user.socket_id).emit("chat", {
             username: props.username,
             chatTime: new Date(),
             msg: props.msg,
           });
         });
+      //#region GET USER ID , DB저장
+      db_conn.query(
+        sql_userid_get,
+        [props.username],
+        (err: any, results: User[]) => {
+          if (err) {
+            console.error("Error get Userid chat" + props.username); //err.stack
+            return;
+          }
+          let user_id = results[0].id;
+
+          //#region INSERT MESSAGE
+          db_conn.query(
+            sql_message_insert,
+            [props.msg, user_id, props.room_id, user_id],
+            (err: any, results: any) => {
+              if (err) {
+                console.error(
+                  "error INSERT MESSAGE" + props.username + props.msg
+                );
+                return;
+              }
+            }
+          );
+          //#endregion INSERT MESSAGE
+        }
+      );
+      //#endregion GET USER ID , DB저장
     });
     //#endregion 사용자 채팅 전송
 
     //#region disconnect
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
     socket.on("disconnect", function () {
-      let user_room = clients.get(socket.id);
-      if (user_room != undefined && !!user_room[0]) {
-        let user_name = user_room[0].username;
-        if (user_name != undefined) {
-          let filtered_connection = rooms
-            .get(user_room[0].room_id)
-            ?.filter((r) => r.username != user_name);
-          if (filtered_connection != undefined)
-            rooms.set(user_room[0].room_id, filtered_connection);
-          clients.delete(socket.id);
+      clients.forEach((value: Connection, nickname: string) => {
+        if (value.socket_id == socket.id) {
+          clients.delete(nickname);
           console.log(
             new Date().toLocaleString(),
-            "]disconnect/",
-            user_name,
-            "/socket_id/",
+            "]discon/",
+            nickname,
+            "/",
             socket.id
           );
+          return false;
         }
-      }
+      });
+
+      // let user_room = clients.get(socket.id);
+      //   clients.delete(socket.id);
+
+      //   console.log("disconnect socket", user_room);
+      //   if (user_room != undefined && !!user_room[0]) {
+      //     let user_name = user_room[0].username;
+      //     if (user_name != undefined) {
+      //       let filtered_connection = rooms
+      //         .get(user_room[0].room_id)
+      //         ?.filter((r) => r.username != user_name);
+      //       if (filtered_connection != undefined)
+      //         rooms.set(user_room[0].room_id, filtered_connection);
+      //       console.log(
+      //         new Date().toLocaleString(),
+      //         "]disconnect/",
+      //         user_name,
+      //         "/",
+      //         socket.id
+      //       );
+      //     }
+      //   }
     });
     //#endregion disconnect
   });
@@ -218,7 +272,7 @@ app.prepare().then(() => {
       process.exit(err ? 1 : 0);
     });
   });
-  
+
   httpServer.listen(3000);
 });
 //#endregion  서버 배포 설정
