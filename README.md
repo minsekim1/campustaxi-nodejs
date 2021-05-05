@@ -29,3 +29,8 @@ firebase
 mysql
 ㄴ secrets_nodejs.json
 ```
+
+## start
+```
+sh start_release.sh
+```
