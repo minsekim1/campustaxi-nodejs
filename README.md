@@ -34,3 +34,11 @@ mysql
 ```
 sh start_release.sh
 ```
+
+## port-forwading add / remove
+```
+sudo iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3000
+```
+```
+sudo iptables -D PREROUTING -t nat -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3000
+```

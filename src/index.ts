@@ -125,13 +125,32 @@ app.prepare().then(() => {
       rooms.get(conn.room_id)?.push(new_connect);
 
       let enter_send_user = rooms.get(conn.room_id);
-      if (enter_send_user != undefined)
-        enter_send_user.map((user) =>
+      if (enter_send_user != undefined) {
+        enter_send_user.map((user) => {
           io.to(user.socket_id).emit("enter", {
             username: conn.username,
             date: new Date(),
-          })
-        );
+          });
+        });
+        //접속한 사용자에게 이전 메세지 전달
+          //#region INSERT MESSAGE
+          db_conn.query(
+            sql_message_insert,
+            [props.msg, user_id, props.room_id, user_id],
+            (err: any, results: any) => {
+              if (err) {
+                console.error(
+                  "error INSERT MESSAGE" + props.username + props.msg
+                );
+                return;
+              }
+            }
+          );
+          //#endregion INSERT MESSAGE
+        io.to(new_connect.socket_id).emit("enter chat", {
+          data: "props.msg",
+        });
+      }
     });
     //#endregion 사용자 접속
 
@@ -182,7 +201,7 @@ app.prepare().then(() => {
         [props.username],
         (err: any, results: User[]) => {
           if (err) {
-            console.error("Error get Userid chat" + props.username); //err.stack
+            console.error("Error get Userid chat " + props.username); //err.stack
             return;
           }
           let user_id = results[0].id;
