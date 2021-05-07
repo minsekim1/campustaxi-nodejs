@@ -2,3 +2,4 @@ node_modules
 firebaseConfig.json
 secrets_nodejs.json
 serverKey.json
+.next
