@@ -4,6 +4,7 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import { send } from "./config/firebase/firebase";
+import { sql_fbtoken_insert } from "./types/fbtoken";
 import {
   Message,
   sql_message_insert,
@@ -24,16 +25,7 @@ app.prepare().then(() => {
     }
     next();
   });
-
-  //#region firebase 설정
-  // https://nicgoon.tistory.com/196
-
-  //#region FCM 설정
-
-  // var firebase = require("./config/firebase/firebase.ts");
-
-  //#endregion FCM 설정
-  //#endregion firebase 설정
+  //#endregion  서버 배포 설정
 
   //#region 서버 연동 설정
 
@@ -43,27 +35,8 @@ app.prepare().then(() => {
 
   //#endregion 서버 연동 설정
 
-  //#region API 설정
-
-  // const messsage_insert = (msg, room_id) => {
-  //   // id
-  //   // created_at
-  //   // updated_at
-  //   // massage
-  //   // massage_type
-  //   // is_deleted
-  //   // deleted_at
-  //   // created_by_id
-  //   // room_id
-  //   // updated_by_id
-  //   messsage_query(
-  //     "INSERT INTO `campustaxi_db`.`massage_tb` (`massage`, `room_id`,`created_at`, `massage_type`, `is_deleted`) VALUES ('hi~!', 75, now(), 'NORMAL', false);"
-  //   );
-  // };
-
-  //#endregion API 설정
-
   //#region 웹소켓 설정
+
   const httpServer = require("http").createServer();
   const io = require("socket.io")(httpServer);
   type Connection = {
@@ -75,10 +48,26 @@ app.prepare().then(() => {
   };
   var clients = new Map<string, Connection>(); // key: socket_id value: 1개 방
   var rooms = new Map<string, Connection[]>(); // key: room_id value: 여러개 소켓
+
+  //#region Socket Token API
+
+  //#endregion Socket Token API
+
   io.on("connection", (socket: any) => {
     //#region enter 사용자 접속
     // data : room_id, username(nickname) firebaseToken
-    socket.on("enter", async function (conn: Connection) {
+    socket.on("enter", (conn: any)=>{
+      //#region GET USER ID
+      sql_userid_get(db_conn, conn.username).then((id) => {
+        if (!!id[0]) {
+          let user_id = id[0].id;
+          //#region INSERT FBTOKEN
+          sql_fbtoken_insert(db_conn, conn.firebaseToken, user_id, 1);
+          //#endregion INSERT FBTOKEN
+        }
+      });
+      //#endregion GET USER ID
+
       console.log(
         new Date().toLocaleString(),
         "]enter/",
@@ -223,33 +212,13 @@ app.prepare().then(() => {
           return false;
         }
       });
-
-      // let user_room = clients.get(socket.id);
-      //   clients.delete(socket.id);
-
-      //   console.log("disconnect socket", user_room);
-      //   if (user_room != undefined && !!user_room[0]) {
-      //     let user_name = user_room[0].username;
-      //     if (user_name != undefined) {
-      //       let filtered_connection = rooms
-      //         .get(user_room[0].room_id)
-      //         ?.filter((r) => r.username != user_name);
-      //       if (filtered_connection != undefined)
-      //         rooms.set(user_room[0].room_id, filtered_connection);
-      //       console.log(
-      //         new Date().toLocaleString(),
-      //         "]disconnect/",
-      //         user_name,
-      //         "/",
-      //         socket.id
-      //       );
-      //     }
-      //   }
     });
     //#endregion disconnect
   });
 
   //#endregion 웹소켓 설정
+
+  //#region pm2 설정
 
   const listeningServer = server.listen((err: any) => {
     if (err) throw err;
@@ -275,4 +244,5 @@ app.prepare().then(() => {
 
   httpServer.listen(3000);
 });
-//#endregion  서버 배포 설정
+
+//#endregion pm2 설정
