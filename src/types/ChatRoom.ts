@@ -1,7 +1,6 @@
 export const sql_room_insert =
 	"INSERT INTO `campustaxi_db`.`rooms_tb` (`created_at`, `updated_at`, `start_address_code`, `start_address`, `start_address_detail`, `start_lat`, `start_lon`, `end_address_code`, `end_address`, `end_address_detail`, `end_lat`, `end_lon`, `boarding_dtm`, `personnel_limit`, `gender`, `is_deleted`, `owner_id`, `category_id`) VALUES (NOW(), NOW(), (?), (?), (?), (?), (?), (?), (?), (?), (?), (?), (?), (?), (?), 0, (?), (?));"
 
-	"INSERT INTO `campustaxi_db`.`rooms_tb` (`created_at`, `updated_at`, `massage`, `massage_type`, `is_deleted`, `created_by_id`, `room_id`, `updated_by_id`) VALUES (NOW(), NOW(), (?), 'NORMAL', 0, (?), (?), (?));";
 
 /*
 

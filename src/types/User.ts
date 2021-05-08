@@ -1,19 +1,50 @@
-export const sql_userid_get =
-  "SELECT id FROM campustaxi_db.users_tb WHERE nickname=(?) LIMIT 0,1;";
+const sql_userid =
+  "SELECT id FROM campustaxi_db.users_tb WHERE nickname=(?) LIMIT 1;";
+const sql_usernickname =
+  "SELECT nickname FROM campustaxi_db.users_tb WHERE id=(?) LIMIT 1;";
 
 /*
+  //#region GET USER ID
+  sql_userid_get(db_conn,nickname).then(id=>{
+  
+  })
+  //#endregion GET USER ID
+*/
+
+//#region GET USER Nickname
+export const sql_userNickname_get = async (
+  db_conn: any,
+  id: User["id"]
+): Promise<Array<User>> => {
+  return new Promise(async (resolve) => {
+    db_conn.query(sql_usernickname, [id], (err: any, results: any) => {
+      if (err) {
+        console.error("error connecting: " + err.stack);
+        resolve([]);
+      }
+      resolve(results);
+    });
+  });
+};
+//#endregion GET USER Nickname
 
 //#region GET USER ID
-db_conn.query(sql_userid_get, [nick], (err: any, results: User[]) => {
-  if (err) {
-    console.error("error connecting: " + err.stack);
-    return;
-  }
-  console.log("results", results[0]); //[0].id , [0]. ...등
-});
+export const sql_userid_get = async (
+  db_conn: any,
+  nickname: User["nickname"]
+): Promise<Array<User>> => {
+  return new Promise(async (resolve) => {
+    db_conn.query(sql_userid, [nickname], (err: any, results: any) => {
+      if (err) {
+        console.error("error connecting: " + err.stack);
+        resolve([]);
+      }
+      resolve(results);
+    });
+  });
+};
 //#endregion GET USER ID
 
-*/
 export type User = {
   id: number;
   password: string; //128자

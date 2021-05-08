@@ -4,7 +4,11 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import { send } from "./config/firebase/firebase";
-import { sql_message_insert, sql_message_select } from "./types/Message";
+import {
+  Message,
+  sql_message_insert,
+  sql_message_select,
+} from "./types/Message";
 import { sql_userid_get, User } from "./types/User";
 
 //#region     서버 배포 설정
@@ -71,7 +75,6 @@ app.prepare().then(() => {
   };
   var clients = new Map<string, Connection>(); // key: socket_id value: 1개 방
   var rooms = new Map<string, Connection[]>(); // key: room_id value: 여러개 소켓
-
   io.on("connection", (socket: any) => {
     //#region enter 사용자 접속
     // data : room_id, username(nickname) firebaseToken
@@ -134,11 +137,12 @@ app.prepare().then(() => {
         });
         //접속한 사용자에게 이전 메세지 전달
         //#region SELECT MESSAGE
-        sql_message_select(db_conn, new_connect.room_id);
-        //#endregion SELECT MESSAGE
-        io.to(new_connect.socket_id).emit("enter chat", {
-          data: "props.msg",
+        sql_message_select(db_conn, new_connect.room_id).then((r) => {
+          io.to(new_connect.socket_id).emit("enter chat", {
+            data: r,
+          });
         });
+        //#endregion SELECT MESSAGE
       }
     });
     //#endregion 사용자 접속
@@ -154,17 +158,6 @@ app.prepare().then(() => {
 
     socket.on("chat", (props: ChatProps) => {
       // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
-      console.log(
-        new Date().toLocaleString(),
-        "]chat /",
-        props.room_id,
-        "/",
-        props.username,
-        "/",
-        socket.id,
-        "/",
-        props.msg
-      );
       let chat_send_user = rooms.get(props.room_id);
       if (chat_send_user != undefined)
         chat_send_user.map((user) => {
@@ -184,17 +177,10 @@ app.prepare().then(() => {
             msg: props.msg,
           });
         });
-      //#region GET USER ID , DB저장
-      db_conn.query(
-        sql_userid_get,
-        [props.username],
-        (err: any, results: User[]) => {
-          if (err) {
-            console.error("Error get Userid chat " + props.username); //err.stack
-            return;
-          }
-          let user_id = results[0].id;
-
+      //#region GET USER ID
+      sql_userid_get(db_conn, props.username).then((id) => {
+        if (!!id[0]) {
+          let user_id = id[0].id;
           //#region INSERT MESSAGE
           sql_message_insert(
             db_conn,
@@ -205,8 +191,19 @@ app.prepare().then(() => {
           );
           //#endregion INSERT MESSAGE
         }
+      });
+      //#endregion GET USER ID
+      console.log(
+        new Date().toLocaleString(),
+        "]chat /",
+        props.room_id,
+        "/",
+        props.username,
+        "/",
+        socket.id,
+        "/",
+        props.msg
       );
-      //#endregion GET USER ID , DB저장
     });
     //#endregion 사용자 채팅 전송
 
