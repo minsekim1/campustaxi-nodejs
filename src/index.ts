@@ -4,7 +4,7 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import { send } from "./config/firebase/firebase";
-import { sql_message_insert } from "./types/Message";
+import { sql_message_insert, sql_message_select } from "./types/Message";
 import { sql_userid_get, User } from "./types/User";
 
 //#region     서버 배포 설정
@@ -133,20 +133,9 @@ app.prepare().then(() => {
           });
         });
         //접속한 사용자에게 이전 메세지 전달
-          //#region INSERT MESSAGE
-          db_conn.query(
-            sql_message_insert,
-            [props.msg, user_id, props.room_id, user_id],
-            (err: any, results: any) => {
-              if (err) {
-                console.error(
-                  "error INSERT MESSAGE" + props.username + props.msg
-                );
-                return;
-              }
-            }
-          );
-          //#endregion INSERT MESSAGE
+        //#region SELECT MESSAGE
+        sql_message_select(db_conn, new_connect.room_id);
+        //#endregion SELECT MESSAGE
         io.to(new_connect.socket_id).emit("enter chat", {
           data: "props.msg",
         });
@@ -207,17 +196,12 @@ app.prepare().then(() => {
           let user_id = results[0].id;
 
           //#region INSERT MESSAGE
-          db_conn.query(
-            sql_message_insert,
-            [props.msg, user_id, props.room_id, user_id],
-            (err: any, results: any) => {
-              if (err) {
-                console.error(
-                  "error INSERT MESSAGE" + props.username + props.msg
-                );
-                return;
-              }
-            }
+          sql_message_insert(
+            db_conn,
+            props.msg,
+            user_id,
+            Number(props.room_id),
+            user_id
           );
           //#endregion INSERT MESSAGE
         }
