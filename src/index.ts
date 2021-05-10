@@ -4,12 +4,18 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import { send } from "./config/firebase/firebase";
-import { sql_fbtoken_insert } from "./types/fbtoken";
 import {
   Message,
   sql_message_insert,
   sql_message_select,
 } from "./types/Message";
+import {
+  addSocket,
+  addToken,
+  ch,
+  closeSocket,
+  closeToken,
+} from "./types/socket";
 import { sql_userid_get, User } from "./types/User";
 
 //#region     서버 배포 설정
@@ -18,7 +24,7 @@ app.prepare().then(() => {
   const http = require("http").Server(app);
   let isAppGoingToBeClosed = false; // SIGINT 시그널을 받았는지 여부. 앱이 곧 종료될 것임을 의미한다.
 
-  server.use(function (req: any, res: any, next: any) {
+  server.use((req: any, res: any, next: any) => {
     // 프로세스 종료 예정이라면 리퀘스트를 처리하지 않는다
     if (isAppGoingToBeClosed) {
       res.set("Connection", "close");
@@ -39,35 +45,11 @@ app.prepare().then(() => {
 
   const httpServer = require("http").createServer();
   const io = require("socket.io")(httpServer);
-  type Connection = {
-    room_id: string;
-    username: string;
-    firebaseToken: string;
-    socket_id: string;
-    enterTime: Date;
-  };
-  var clients = new Map<string, Connection>(); // key: socket_id value: 1개 방
-  var rooms = new Map<string, Connection[]>(); // key: room_id value: 여러개 소켓
-
-  //#region Socket Token API
-
-  //#endregion Socket Token API
 
   io.on("connection", (socket: any) => {
-    //#region enter 사용자 접속
-    // data : room_id, username(nickname) firebaseToken
-    socket.on("enter", (conn: any)=>{
-      //#region GET USER ID
-      sql_userid_get(db_conn, conn.username).then((id) => {
-        if (!!id[0]) {
-          let user_id = id[0].id;
-          //#region INSERT FBTOKEN
-          sql_fbtoken_insert(db_conn, conn.firebaseToken, user_id, 1);
-          //#endregion INSERT FBTOKEN
-        }
-      });
-      //#endregion GET USER ID
-
+    //#region enter 채팅방 접속
+    // data : conn.room_id socket.id conn.username conn. 삭제=>firebaseToken<=삭제
+    socket.on("enter", (conn: any) => {
       console.log(
         new Date().toLocaleString(),
         "]enter/",
@@ -75,66 +57,58 @@ app.prepare().then(() => {
         "/",
         conn.username,
         "/",
+        socket.id
+      );
+
+      addSocket(conn.username, socket.id, conn.room_id).then((c) => {
+        //방에 있는 이미 들어온 유저에게 접속 전달
+        let enter_send_users = ch.rooms.get(conn.room_id);
+        if (enter_send_users) {
+          enter_send_users.map((user) => {
+            io.to(user.socket_id).emit("enter", {
+              username: conn.username,
+              date: new Date(),
+            });
+          });
+          //접속한 사용자에게 이전 메세지 전달
+          //#region SELECT MESSAGE
+          sql_message_select(db_conn, conn.room_id).then((r) => {
+            io.to(socket.id).emit("enter chat", {
+              data: r,
+            });
+          });
+          //#endregion SELECT MESSAGE
+        }
+      });
+      console.log("enter", ch);
+    });
+    //#endregion 채팅방 접속
+
+    //#region 채팅방 나가기
+    // data : None
+    socket.on("exit", (conn: any) => {
+      console.log(new Date().toLocaleString(), "]exit/", socket.id);
+      closeSocket(socket.id);
+      console.log("exit", ch);
+    });
+    //#endregion 채팅방 나가기
+
+    //#region enter 앱 접속
+    // data : conn.username conn.firebaseToken
+    socket.on("OToke", (conn: any) => {
+      console.log(
+        new Date().toLocaleString(),
+        "]OToke/",
+        conn.username,
+        "/",
         socket.id,
         "/",
         !!conn.firebaseToken
       );
-
-      if (rooms.get(conn.room_id) == undefined)
-        rooms.set(conn.room_id, new Array());
-
-      let new_connect: any = new Object();
-      new_connect.room_id = conn.room_id;
-      new_connect.socket_id = socket.id;
-      new_connect.enterTime = new Date();
-      new_connect.username = conn.username;
-      new_connect.firebaseToken = conn.firebaseToken;
-
-      //#region 중복 닉네임 접속 시 이전 소켓과 방 삭제
-
-      //clients 중복
-      let client_room = clients.get(conn.username);
-      if (client_room != undefined) {
-        let members = rooms.get(client_room.room_id);
-        if (members != undefined)
-          rooms.set(
-            client_room.room_id,
-            members.filter((c: Connection) => c.username != conn.username)
-          );
-        clients.delete(conn.username);
-      }
-      // rooms 중복
-      let members = rooms.get(conn.room_id);
-      if (members != undefined)
-        rooms.set(
-          conn.room_id,
-          members.filter((c: Connection) => c.username != conn.username)
-        );
-
-      //#endregion 중복 닉네임 접속 시 이전 소켓 삭제
-
-      clients.set(conn.username, new_connect);
-      rooms.get(conn.room_id)?.push(new_connect);
-
-      let enter_send_user = rooms.get(conn.room_id);
-      if (enter_send_user != undefined) {
-        enter_send_user.map((user) => {
-          io.to(user.socket_id).emit("enter", {
-            username: conn.username,
-            date: new Date(),
-          });
-        });
-        //접속한 사용자에게 이전 메세지 전달
-        //#region SELECT MESSAGE
-        sql_message_select(db_conn, new_connect.room_id).then((r) => {
-          io.to(new_connect.socket_id).emit("enter chat", {
-            data: r,
-          });
-        });
-        //#endregion SELECT MESSAGE
-      }
+      addToken(conn.username, conn.firebaseToken);
+      console.log("OToke", ch);
     });
-    //#endregion 사용자 접속
+    //#endregion 앱 접속
 
     //#region chat 사용자 채팅 전송
     type ChatProps = {
@@ -145,78 +119,80 @@ app.prepare().then(() => {
       firebaseToken: string;
     };
 
-    socket.on("chat", (props: ChatProps) => {
-      // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
-      let chat_send_user = rooms.get(props.room_id);
-      if (chat_send_user != undefined)
-        chat_send_user.map((user) => {
-          //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
-          if (user.username != props.username)
-            send({
-              clientToken: user.firebaseToken,
-              title: props.username,
-              mesage: props.msg,
-              // click_action: "string",
-              // icon: ""
-            });
-          // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
-          io.to(user.socket_id).emit("chat", {
-            username: props.username,
-            chatTime: new Date(),
-            msg: props.msg,
-          });
-        });
-      //#region GET USER ID
-      sql_userid_get(db_conn, props.username).then((id) => {
-        if (!!id[0]) {
-          let user_id = id[0].id;
-          //#region INSERT MESSAGE
-          sql_message_insert(
-            db_conn,
-            props.msg,
-            user_id,
-            Number(props.room_id),
-            user_id
-          );
-          //#endregion INSERT MESSAGE
-        }
-      });
-      //#endregion GET USER ID
-      console.log(
-        new Date().toLocaleString(),
-        "]chat /",
-        props.room_id,
-        "/",
-        props.username,
-        "/",
-        socket.id,
-        "/",
-        props.msg
-      );
-    });
+    // socket.on("chat", (props: ChatProps) => {
+    //   // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
+    //   let chat_send_user = rooms.get(props.room_id);
+    //   if (chat_send_user != undefined)
+    //     chat_send_user.map((user) => {
+    //       //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
+    //       if (user.nickname != props.username)
+    //         send({
+    //           clientToken: user.firebaseToken,
+    //           title: props.username,
+    //           mesage: props.msg,
+    //           // click_action: "string",
+    //           // icon: ""
+    //         });
+    //       // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
+    //       io.to(user.socket_id).emit("chat", {
+    //         username: props.username,
+    //         chatTime: new Date(),
+    //         msg: props.msg,
+    //       });
+    //     });
+    //   //#region GET USER ID
+    //   sql_userid_get(db_conn, props.username).then((id) => {
+    //     if (!!id[0]) {
+    //       let user_id = id[0].id;
+    //       //#region INSERT MESSAGE
+    //       sql_message_insert(
+    //         db_conn,
+    //         props.msg,
+    //         user_id,
+    //         Number(props.room_id),
+    //         user_id
+    //       );
+    //       //#endregion INSERT MESSAGE
+    //     }
+    //   });
+    //   //#endregion GET USER ID
+    //   console.log(
+    //     new Date().toLocaleString(),
+    //     "]chat /",
+    //     props.room_id,
+    //     "/",
+    //     props.username,
+    //     "/",
+    //     socket.id,
+    //     "/",
+    //     props.msg
+    //   );
+    // });
     //#endregion 사용자 채팅 전송
 
-    //#region disconnect
+    //#region 앱 종료
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
-    socket.on("disconnect", function () {
-      clients.forEach((value: Connection, nickname: string) => {
-        if (value.socket_id == socket.id) {
-          clients.delete(nickname);
-          console.log(
-            new Date().toLocaleString(),
-            "]discon/",
-            nickname,
-            "/",
-            socket.id
-          );
-          return false;
+    socket.on("disconnect", () => {
+      closeSocket(socket.id).then((c) => {
+        if (c) {
+          let conn = ch.users.get(c.nickname);
+          if (conn) closeToken(conn.firebaseToken);
         }
-      });
-    });
-    //#endregion disconnect
-  });
+        console.log(
+          new Date().toLocaleString(),
+          "]discn/",
+          c?.nickname,
+          "/",
+          socket.id
+        );
+      console.log("disconnect", ch);
 
-  //#endregion 웹소켓 설정
+      });
+      //#endregion 앱 종료
+    });
+
+    //#endregion 웹소켓 설정
+  });
 
   //#region pm2 설정
 
@@ -244,5 +220,4 @@ app.prepare().then(() => {
 
   httpServer.listen(3000);
 });
-
 //#endregion pm2 설정
