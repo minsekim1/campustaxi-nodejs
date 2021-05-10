@@ -119,56 +119,56 @@ app.prepare().then(() => {
       firebaseToken: string;
     };
 
-    // socket.on("chat", (props: ChatProps) => {
-    //   // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
-    //   let chat_send_user = rooms.get(props.room_id);
-    //   if (chat_send_user != undefined)
-    //     chat_send_user.map((user) => {
-    //       //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
-    //       if (user.nickname != props.username)
-    //         send({
-    //           clientToken: user.firebaseToken,
-    //           title: props.username,
-    //           mesage: props.msg,
-    //           // click_action: "string",
-    //           // icon: ""
-    //         });
-    //       // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
-    //       io.to(user.socket_id).emit("chat", {
-    //         username: props.username,
-    //         chatTime: new Date(),
-    //         msg: props.msg,
-    //       });
-    //     });
-    //   //#region GET USER ID
-    //   sql_userid_get(db_conn, props.username).then((id) => {
-    //     if (!!id[0]) {
-    //       let user_id = id[0].id;
-    //       //#region INSERT MESSAGE
-    //       sql_message_insert(
-    //         db_conn,
-    //         props.msg,
-    //         user_id,
-    //         Number(props.room_id),
-    //         user_id
-    //       );
-    //       //#endregion INSERT MESSAGE
-    //     }
-    //   });
-    //   //#endregion GET USER ID
-    //   console.log(
-    //     new Date().toLocaleString(),
-    //     "]chat /",
-    //     props.room_id,
-    //     "/",
-    //     props.username,
-    //     "/",
-    //     socket.id,
-    //     "/",
-    //     props.msg
-    //   );
-    // });
-    //#endregion 사용자 채팅 전송
+    socket.on("chat", (props: ChatProps) => {
+      // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
+      let chat_send_user = ch.rooms.get(props.room_id);
+      if (!!chat_send_user)
+        chat_send_user.map((user) => {
+          //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
+          if (user.nickname != props.username)
+            send({
+              clientToken: user.firebaseToken,
+              title: props.username,
+              mesage: props.msg,
+              // click_action: "string",
+              // icon: ""
+            });
+          // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
+          io.to(user.socket_id).emit("chat", {
+            username: props.username,
+            chatTime: new Date(),
+            msg: props.msg,
+          });
+        });
+      //#region GET USER ID
+      sql_userid_get(db_conn, props.username).then((id) => {
+        if (!!id[0]) {
+          let user_id = id[0].id;
+          //#region INSERT MESSAGE
+          sql_message_insert(
+            db_conn,
+            props.msg,
+            user_id,
+            Number(props.room_id),
+            user_id
+          );
+          //#endregion INSERT MESSAGE
+        }
+      });
+      //#endregion GET USER ID
+      console.log(
+        new Date().toLocaleString(),
+        "]chat /",
+        props.room_id,
+        "/",
+        props.username,
+        "/",
+        socket.id,
+        "/",
+        props.msg
+      );
+    });
+    // #endregion 사용자 채팅 전송
 
     //#region 앱 종료
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
