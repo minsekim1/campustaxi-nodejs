@@ -25,67 +25,86 @@ const Connection = (
 //#endregion 생성자
 
 export var ch = {
-  sockets: new Map<string, Connection>(), //key: socket_id
-  rooms: new Map<string, Connection[]>(), //key: room_id
-  tokens: new Map<string, Connection>(), //key: firebaseToken
-  users: new Map<string, Connection>(), //key: nickname
+  sockets: new Map<string, Connection>(), //key: socket_id    value: connection
+  rooms: new Map<string, { socket: Connection[]; token: Connection[] }>(), //key: room_id      value:token, socket
+  tokens: new Map<string, string[]>(), //key: firebaseToken value:room_id[]
+  users: new Map<string, { socket: Connection; token: Connection[] }>(), //key: nickname     value: token, socket
 };
-//socket.on("enter", (conn: any)=>{
-// data : room_id, username(nickname) firebaseToken
-export const addSocket = async (
+//앱을 처음 킨상태. 소켓 번호와 토큰 값을 알 수 있다.
+export const appEnter = (
+  nickname: string,
+  socket_id: string,
+  token: string
+) => {
+  let newData_socket = Connection("", nickname, "", socket_id);
+  let newData_token = Connection("", nickname, token, "");
+  ch.users.set(nickname, { socket: newData_socket, token: [newData_token] });
+};
+//채팅방을 들어간 상태. fcm은 받지않고 소켓만 통신한다.
+export const chatEnter = (
   nickname: string,
   socket_id: string,
   room_id: string
 ) => {
-  // sockets add
-  ch.sockets.set(socket_id, Connection(room_id, nickname, "", socket_id));
-  // rooms add
+  let newData = Connection(room_id, nickname, "", socket_id);
+  // sockets set
+  ch.sockets.set(socket_id, newData);
+  // rooms set
   let conns = ch.rooms.get(room_id);
-  if (!conns)
-    ch.rooms.set(room_id, [Connection(room_id, nickname, "", socket_id)]);
-  else
-    ch.rooms.set(
-      room_id,
-      conns.concat(Connection(room_id, nickname, "", socket_id))
-    );
-  return Connection(room_id, nickname, "", socket_id);
-};
-export const closeSocket = async (socket_id: string) => {
-  let con = ch.sockets.get(socket_id);
-  if (!!con) {
-    let room_conns = ch.rooms.get(con.room_id);
-    if (room_conns) {
-      let setroom = room_conns?.filter(
-        (room_conn) => room_conn.nickname != con?.nickname
-      );
-      if (!setroom.length) {
-        //빈 배열
-        ch.rooms.delete(con.room_id);
-      } else {
-        //남은 배열
-        ch.rooms.set(con.room_id, setroom);
-      }
-    }
-    ch.sockets.delete(con.socket_id);
+  if (!!conns) {
+    let token_other = conns.token.filter((c) => c.nickname != nickname);
+    let socket_other = conns.socket.filter((c) => c.nickname != nickname);
+    ch.rooms.set(room_id, {
+      socket: socket_other.concat(newData),
+      token: token_other,
+    });
+  } else {
+     ch.rooms.set(room_id, {
+      socket: [newData],
+      token: [],
+    });
   }
-  return con;
-};
+  //users set
+  ch.users.set(nickname, {
+    socket: newData,
+    token: ch.users.get(nickname)?.token.filter(c=>c.room_id != room_id) || [],
+  });
 
-export const addToken = async (nickname: string, token: string) => {
-  // tokens add
-  ch.tokens.set(token, Connection("", nickname, token, ""));
-  // users add
-  ch.users.set(nickname, Connection("", nickname, token, ""));
-  return Connection("", nickname, token, "");
+  return true;
 };
-export const closeToken = (token: string) => {
-  let con = ch.tokens.get(token);
-  if (!!con) {
-    ch.tokens.delete(con.firebaseToken);
-    ch.users.delete(con.nickname);
+//채팅방 소켓을 닫은 상태. fcm만 활성화됌.(앱종료시도 마찬가지)
+export const chatClose = (
+  nickname: string,
+  token:string,
+  room_id: string
+) => {
+  //socket => token로 전환
+  //room data change
+  let newData_token = Connection(room_id, nickname, token, "");
+  let room = ch.rooms.get(room_id)
+  if (!!room) {
+    let token_other = room.token.filter((c) => c.nickname != nickname);
+    let socket_other = room.socket.filter((c) => c.nickname != nickname);
+    ch.rooms.set(room_id, {socket:socket_other,token:token_other.concat(newData_token)})
+  } else {
+    console.log("err chatClose room data change",room_id,nickname,token)
   }
+  //user data change
+  let user = ch.users.get(nickname);
+  if (!!user)
+  {
+    let token_my_other = user.token.filter((c) => c.room_id != room_id);
+    let socket_my = user.socket;
+    let newData_socket = Connection("", nickname, "", socket_my.socket_id);
+    ch.rooms.set(room_id, {socket:[newData_socket],token:token_my_other.concat(newData_token)})
+    }else{
+    console.log("err chatClose user data change",room_id,nickname,token)
+  }
+  }
+//로그아웃을 했을떄만 쓰고, 앱종료에는 chatClose를 쓸것. fcm과 소켓모두 삭제한다.
+export const appExit =  (socket_id: string) => {
+  
 };
-
 //#endregion Socket Token API
 
 export type Socket = {

@@ -121,24 +121,30 @@ app.prepare().then(() => {
 
     socket.on("chat", (props: ChatProps) => {
       // 방 번호를 통해서 방안에 모든 유저에게 메세지를 전송
-      let chat_send_user = ch.rooms.get(props.room_id);
+      //socket는 방안에 접속해 있는 유저
+      let chat_send_user_socket = ch.rooms.get(props.room_id);
+      //token은 현재 채팅을하진 않지만 들어가 있는 채팅방 멤버 => FCM알림
+      let fcm_send_user_token = ch.rooms.get(props.room_id);
       if (!!chat_send_user)
-        chat_send_user.map((user) => {
-          //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
-          if (user.nickname != props.username)
-            send({
-              clientToken: user.firebaseToken,
-              title: props.username,
-              mesage: props.msg,
-              // click_action: "string",
-              // icon: ""
+        if (chat_send_user.length > 0) {
+          
+          chat_send_user.map((user) => {
+            //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
+            if (user.nickname != props.username)
+              send({
+                clientToken: user.firebaseToken,
+                title: props.username,
+                mesage: props.msg,
+                // click_action: "string",
+                // icon: ""
+              });
+            // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
+            io.to(user.socket_id).emit("chat", {
+              username: props.username,
+              chatTime: new Date(),
+              msg: props.msg,
             });
-          // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
-          io.to(user.socket_id).emit("chat", {
-            username: props.username,
-            chatTime: new Date(),
-            msg: props.msg,
-          });
+        }
         });
       //#region GET USER ID
       sql_userid_get(db_conn, props.username).then((id) => {
