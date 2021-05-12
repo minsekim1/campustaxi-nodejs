@@ -25,112 +25,179 @@ const Connection = (
 //#endregion 생성자
 
 export var ch = {
-  sockets: new Map<string, Connection>(), //key: socket_id    value: connection
+  sockets: new Map<string, string>(), //key: socket_id    value: nickname
   rooms: new Map<string, { socket: Connection[]; token: Connection[] }>(), //key: room_id      value:token, socket
-  tokens: new Map<string, string[]>(), //key: firebaseToken value:room_id[]
-  users: new Map<string, { socket: Connection; token: Connection[] }>(), //key: nickname     value: token, socket
+  users: new Map<
+    string,
+    {
+      socket: Connection | undefined;
+      token: Connection[];
+      socket_id: string;
+      token_id: string;
+      enterDate: Date;
+    }
+  >(), //key: nickname     value: token, socket
 };
 //앱을 처음 킨상태. 소켓 번호와 토큰 값을 알 수 있다.
-export const appEnter = (
+export const appEnter = async (
   nickname: string,
   socket_id: string,
   token: string
 ) => {
-  //socket set
-  let newData_socket = Connection("", nickname, "", socket_id);
-  ch.sockets.set(socket_id, newData_socket);
-  //user set
-  let newData_token = Connection("", nickname, token, "");
-  ch.users.set(nickname, { socket: newData_socket, token: [newData_token] });
+  // sockets set
+  ch.sockets.set(socket_id, nickname);
+  // user set
+  try {
+    ch.users.set(nickname, {
+      socket: undefined,
+      token: [],
+      socket_id: socket_id,
+      token_id: token,
+      enterDate: new Date(),
+    });
+    return true;
+  } catch (e) {
+    console.log("appEnter err:", e);
+    return false;
+  }
 };
 //채팅방을 들어간 상태. fcm은 받지않고 소켓만 통신한다.
-export const chatEnter = (
-  nickname: string,
-  socket_id: string,
-  room_id: string
-) => {
-  let newData = Connection(room_id, nickname, "", socket_id);
-  // sockets set
-  ch.sockets.set(socket_id, newData);
-  // rooms set
-  let conns = ch.rooms.get(room_id);
-  if (!!conns) {
-    let token_other = conns.token.filter((c) => c.nickname != nickname);
-    let socket_other = conns.socket.filter((c) => c.nickname != nickname);
-    ch.rooms.set(room_id, {
-      socket: socket_other.concat(newData),
-      token: token_other,
-    });
-  } else {
-    ch.rooms.set(room_id, {
-      socket: [newData],
-      token: [],
-    });
+export const chatEnter = async (nickname: string, room_id: string) => {
+  try {
+    let origin = ch.users.get(nickname);
+    if (!!origin) {
+      // rooms set
+      let newData = Connection(room_id, nickname, "", origin.socket_id);
+      let conns = ch.rooms.get(room_id);
+      if (!!conns) {
+        let token_other = conns.token.filter((c) => c.nickname != nickname);
+        let socket_other = conns.socket.filter((c) => c.nickname != nickname);
+        ch.rooms.set(room_id, {
+          socket: socket_other.concat(newData),
+          token: token_other,
+        });
+      } else {
+        ch.rooms.set(room_id, {
+          socket: [newData],
+          token: [],
+        });
+      }
+      //users set
+      ch.users.set(nickname, {
+        socket: newData,
+        token: origin.token.filter((c) => c.room_id != room_id) || [],
+        socket_id: origin.socket_id,
+        token_id: origin.token_id,
+        enterDate: origin.enterDate,
+      });
+    }
+    return true;
+  } catch (e) {
+    console.log("chatEnter err:", e);
+    return false;
   }
-  //users set
-  ch.users.set(nickname, {
-    socket: newData,
-    token:
-      ch.users.get(nickname)?.token.filter((c) => c.room_id != room_id) || [],
-  });
-
-  return true;
 };
 //채팅방 소켓을 닫은 상태. fcm만 활성화됌.(앱종료시도 마찬가지)
-export const chatClose = (nickname: string, token: string, room_id: string) => {
-  //socket => token로 전환
-  //room data change
-  let newData_token = Connection(room_id, nickname, token, "");
-  let room = ch.rooms.get(room_id);
-  if (!!room) {
-    let token_other = room.token.filter((c) => c.nickname != nickname);
-    let socket_other = room.socket.filter((c) => c.nickname != nickname);
-    ch.rooms.set(room_id, {
-      socket: socket_other,
-      token: token_other.concat(newData_token),
-    });
-  } else {
-    console.log("err chatClose room data change", room_id, nickname, token);
-  }
-  //user data change
-  let user = ch.users.get(nickname);
-  if (!!user) {
-    let token_my_other = user.token.filter((c) => c.room_id != room_id);
-    let socket_my = user.socket;
-    let newData_socket = Connection("", nickname, "", socket_my.socket_id);
-    ch.users.set(room_id, {
-      socket: newData_socket,
-      token: token_my_other.concat(newData_token),
-    });
-    //socket set
-    let socket_id = user.socket.socket_id;
-    ch.sockets.delete(socket_id);
-  } else {
-    console.log("err chatClose user data change", room_id, nickname, token);
+export const chatClose = async (socket_id: string) => {
+  //nickname: string, room_id: string
+  try {
+    //socket => token로 전환
+    let nickname = ch.sockets.get(socket_id);
+    if (!!nickname) {
+      let origin = ch.users.get(nickname);
+      if (!!origin) {
+        let room_id = origin.socket?.room_id;
+        if (!!room_id) {
+          //room set
+          let newData_token = Connection(
+            room_id,
+            nickname,
+            origin.token_id,
+            ""
+          );
+          let room = ch.rooms.get(room_id);
+          if (!!room) {
+            let token_other = room.token.filter((c) => c.nickname != nickname);
+            let socket_other = room.socket.filter(
+              (c) => c.nickname != nickname
+            );
+            ch.rooms.set(room_id, {
+              socket: socket_other,
+              token: token_other.concat(newData_token),
+            });
+          } else {
+            console.log("err chatClose room data change", room_id, nickname);
+          }
+
+          //user set
+          let token_my_other = origin.token.filter((c) => c.room_id != room_id);
+          ch.users.set(nickname, {
+            socket: undefined,
+            token: token_my_other.concat(newData_token),
+            socket_id: origin.socket_id,
+            token_id: origin.token_id,
+            enterDate: origin.enterDate,
+          });
+        } else {
+          console.log("err chatClose user data change", room_id, nickname);
+        }
+      }
+    }
+    return true;
+  } catch (e) {
+    console.log("chatClose err:", e);
+    return false;
   }
 };
 //로그아웃을 했을떄만 쓰고, 앱종료에는 chatClose를 쓸것. fcm과 소켓모두 삭제한다.
 // *주의: 로그아웃을 한다고 유저가 접속한 모든 방을 exit처리해서는 안된다. 다시 로그인을 했을시 내 채팅방 목록에 떠야하기때문.
-export const appExit = (nickname: string) => {
-  let my_rooms = ch.users.get(nickname); //socket tokens
-  let my_socket = my_rooms?.socket;
-  //delete room in socket
-  if (!!my_socket) {
-    if (my_socket.room_id != "") {
-      let room = ch.rooms.get(my_socket.room_id);
-      if (!!room) {
-        let token_other = room.token.filter((c) => c.nickname != nickname);
-        let socket_other = room.socket.filter((c) => c.nickname != nickname);
-        ch.rooms.set(my_socket.room_id, {
-          socket: socket_other,
-          token: token_other,
-        });
+export const appExit = async (socket_id: string) => {
+  try {
+    let nickname = ch.sockets.get(socket_id);
+    if (!!nickname) {
+      let origin = ch.users.get(nickname);
+      if (!!origin) {
+        let my_socket = origin?.socket;
+        //delete room in socket
+        if (!!my_socket) {
+          if (my_socket.room_id != "") {
+            let room = ch.rooms.get(my_socket.room_id);
+            if (!!room) {
+              ch.rooms.set(my_socket.room_id, {
+                socket: room.socket.filter((c) => c.nickname != nickname),
+                token: room.token.filter((c) => c.nickname != nickname),
+              });
+            }
+          }
+        }
+        //delete rooms in tokens
+        let my_rooms_tokens = origin?.token;
+        if (!!my_rooms_tokens) {
+          my_rooms_tokens.map((my_room) => {
+            if (my_room.room_id != "") {
+              let room = ch.rooms.get(my_room.room_id);
+              if (!!room) {
+                ch.rooms.set(my_room.room_id, {
+                  socket: room.socket.filter((c) => c.nickname != nickname),
+                  token: room.token.filter((c) => c.nickname != nickname),
+                });
+              }
+            }
+          });
+        }
+        // socket && token delete
+        ch.sockets.delete(origin.socket_id);
+        // user delete
+        ch.users.delete(nickname);
+      } else {
+        console.log("err appExit", socket_id);
       }
     }
+    return true;
+  } catch (e) {
+    console.log("appExit err:", e);
+    return false;
   }
-  //delete rooms in tokens
-  let my_tokens = my_rooms?.token;
-  
 };
 //#endregion Socket Token API
 
