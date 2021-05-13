@@ -151,7 +151,7 @@ export const chatClose = async (socket_id: string) => {
 };
 //로그아웃을 했을떄만 쓰고, 앱종료에는 chatClose를 쓸것. fcm과 소켓모두 삭제한다.
 // *주의: 로그아웃을 한다고 유저가 접속한 모든 방을 exit처리해서는 안된다. 다시 로그인을 했을시 내 채팅방 목록에 떠야하기때문.
-export const appExit = async (socket_id: string) => {
+export const Logout = async (socket_id: string) => {
   try {
     let nickname = ch.sockets.get(socket_id);
     if (!!nickname) {
@@ -163,10 +163,15 @@ export const appExit = async (socket_id: string) => {
           if (my_socket.room_id != "") {
             let room = ch.rooms.get(my_socket.room_id);
             if (!!room) {
-              ch.rooms.set(my_socket.room_id, {
-                socket: room.socket.filter((c) => c.nickname != nickname),
-                token: room.token.filter((c) => c.nickname != nickname),
-              });
+              let sockets = room.socket.filter((c) => c.nickname != nickname);
+              let tokens = room.token.filter((c) => c.nickname != nickname);
+              if (sockets.length == 0 && tokens.length == 0)
+                ch.rooms.delete(my_socket.room_id);
+              else
+                ch.rooms.set(my_socket.room_id, {
+                  socket: sockets,
+                  token: tokens,
+                });
             }
           }
         }
@@ -177,10 +182,15 @@ export const appExit = async (socket_id: string) => {
             if (my_room.room_id != "") {
               let room = ch.rooms.get(my_room.room_id);
               if (!!room) {
-                ch.rooms.set(my_room.room_id, {
-                  socket: room.socket.filter((c) => c.nickname != nickname),
-                  token: room.token.filter((c) => c.nickname != nickname),
-                });
+                let sockets = room.socket.filter((c) => c.nickname != nickname);
+                let tokens = room.token.filter((c) => c.nickname != nickname);
+                if (sockets.length == 0 && tokens.length == 0)
+                  ch.rooms.delete(my_room.room_id);
+                else
+                  ch.rooms.set(my_room.room_id, {
+                    socket: sockets,
+                    token: tokens,
+                  });
               }
             }
           });

@@ -9,7 +9,7 @@ import {
   sql_message_insert,
   sql_message_select,
 } from "./types/Message";
-import { appEnter, appExit, ch, chatClose, chatEnter } from "./types/socket";
+import { appEnter, ch, chatClose, chatEnter, Logout } from "./types/socket";
 import { sql_userid_get, User } from "./types/User";
 
 //#region     서버 배포 설정
@@ -25,19 +25,15 @@ app.prepare().then(() => {
     }
     next();
   });
-  //#endregion  서버 배포 설정
-
-  //#region 서버 연동 설정
-
   var db_config = require("./config/mysql/database.js");
   var db_conn = db_config.init();
   db_config.connect(db_conn);
 
-  //#region 웹소켓 설정
-
   const httpServer = require("http").createServer();
   const io = require("socket.io")(httpServer);
+  //#endregion  서버 배포 설정
 
+//#region 웹소켓 설정
   io.on("connection", (socket: any) => {
     //#region chatEnter 채팅방 접속
     // data : conn.room_id conn.nickname 
@@ -126,13 +122,17 @@ app.prepare().then(() => {
       if (!!fcm_send_user_token) {
         fcm_send_user_token.map((user) => {
           if (user.nickname != props.nickname)
+          {
+            let other = ch.users.get(user.nickname)
+            if (!!other)
             send({
-              clientToken: user.firebaseToken,
+              clientToken: other.token_id,
               title: props.nickname,
               mesage: props.msg,
               // click_action: "string",
               // icon: ""
             });
+          }
         });
       }
 
@@ -141,13 +141,18 @@ app.prepare().then(() => {
       if (!!chat_send_user_socket) {
         // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
         chat_send_user_socket.map((user) => {
-          io.to(user.socket_id).emit("chat", {
-            nickname: props.nickname,
-            chatTime: new Date(),
-            msg: props.msg,
-          });
+          let other = ch.users.get(user.nickname)
+          if (!!other) {
+            io.to(other.socket_id).emit("chat", {
+              nickname: props.nickname,
+              chatTime: new Date(),
+              msg: props.msg,
+            });
+              
+            }
         });
       }
+      
       //#region GET USER ID
       sql_userid_get(db_conn, props.nickname).then((id) => {
         if (!!id[0]) {
@@ -178,15 +183,27 @@ app.prepare().then(() => {
     });
     // #endregion 사용자 채팅 전송
 
-    //#region 앱 종료
+    //#region disconnect 앱 종료
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
     socket.on("disconnect", () => {
       chatClose(socket.id).then((b) => {
         console.log(new Date().toLocaleString(), "]disc/", socket.id);
         console.log("disconnect", ch, b);
+        //socket delete
+        ch.sockets.delete(socket.id)
       });
-      //#endregion 앱 종료
     });
+    //#endregion 앱 종료
+
+    // #region logout 로그아웃
+    socket.on("logout", () => {
+      Logout(socket.id).then((b) => {
+        console.log(new Date().toLocaleString(), "]logu/", socket.id);
+        console.log("logout", ch, b);
+      });
+    });
+    console.log("logout", socket.id);
+    //#endregion logout 로그아웃
     //#endregion 웹소켓 설정
   });
 
