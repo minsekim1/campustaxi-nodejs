@@ -43,6 +43,7 @@ export const send = (m: Message) => {
         sound: "default",
         click_action: !!m.click_action ? m.click_action : "FCM_PLUGIN_ACTIVITY",
         icon: !!m.icon ? m.icon : "fcm_push_icon",
+        vibration: true
       },
       // 메시지 중요도
       priority: "high",

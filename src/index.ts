@@ -116,27 +116,7 @@ app.prepare().then(() => {
     socket.on("chat", (props: ChatProps) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
 
-      //token은 현재 채팅을하진 않지만 들어가 있는 채팅방 멤버 => FCM알림
-      let fcm_send_user_token = ch.rooms.get(props.room_id)?.token;
-      //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
-      if (!!fcm_send_user_token) {
-        fcm_send_user_token.map((user) => {
-          if (user.nickname != props.nickname)
-          {
-            let other = ch.users.get(user.nickname)
-            if (!!other)
-            send({
-              clientToken: other.token_id,
-              title: props.nickname,
-              mesage: props.msg,
-              // click_action: "string",
-              // icon: ""
-            });
-          }
-        });
-      }
-
-      //socket는 방안에 접속해 있는 유저
+            //socket는 방안에 접속해 있는 유저
       let chat_send_user_socket = ch.rooms.get(props.room_id)?.socket;
       if (!!chat_send_user_socket) {
         // 웹소켓 채팅 데이터 전송 (나를 포함한 소켓 전송)
@@ -152,7 +132,26 @@ app.prepare().then(() => {
             }
         });
       }
-      
+
+      //token은 현재 채팅을하진 않지만 들어가 있는 채팅방 멤버 => FCM알림
+      let fcm_send_user_token = ch.rooms.get(props.room_id)?.token;
+      //Firebase 토큰 FCM 전송 (나를 제외한 FCM 전송)
+      if (!!fcm_send_user_token) {
+        fcm_send_user_token.map((user) => {
+          if (user.nickname != props.nickname) {
+            let other = ch.users.get(user.nickname)
+            if (!!other)
+              send({
+                clientToken: other.token_id,
+                title: props.nickname,
+                mesage: props.msg,
+                // click_action: "string",
+                // icon: ""
+              });
+          }
+        });
+      }
+
       //#region GET USER ID
       sql_userid_get(db_conn, props.nickname).then((id) => {
         if (!!id[0]) {
@@ -202,7 +201,6 @@ app.prepare().then(() => {
         console.log("logout", ch, b);
       });
     });
-    console.log("logout", socket.id);
     //#endregion logout 로그아웃
     //#endregion 웹소켓 설정
   });
