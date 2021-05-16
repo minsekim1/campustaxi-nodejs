@@ -1,0 +1,28 @@
+1. 맥에서 redis 설치
+ -> brew install redis
+
+2. 설치된 경로
+2-1. redis 실행파일: /usr/local/bin/redis-server,  redis-cli ...
+2-2. redis 설정파일: /usr/local/etc/redis.conf
+
+3. redis 서버 실행
+-> redis-server
+
+4. redis 클라이언트로 접속
+-> redis-cli
+
+5. redis 접속 후 키 입력/삭제
+-> set dev4u https://devtu.tistory.com 
+-> get dev4u
+
+6. 모든키 조회
+-> keys *
+
+7. 데이터베이스
+-> redis는 서버 인스턴스당 16개 데이터베이스를 가질 수 있음
+
+8. 데이터베이스 전환: select 명령어를 통해서 데이터베이스 전환
+->select 1
+->select 2
+
+출처: https://dev4u.tistory.com/963 [데브포유]

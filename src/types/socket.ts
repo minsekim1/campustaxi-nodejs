@@ -67,25 +67,25 @@ export const chatEnter = async (nickname: string, room_id: string) => {
     let origin = ch.users.get(nickname);
     if (!!origin) {
       // rooms set
-      let newData = Connection(room_id, nickname, origin.token_id, origin.socket_id);
+      let newData = Connection(room_id, nickname, "", origin.socket_id);
       let conns = ch.rooms.get(room_id);
       if (!!conns) {
         let token_other = conns.token.filter((c) => c.nickname != nickname);
         let socket_other = conns.socket.filter((c) => c.nickname != nickname);
         ch.rooms.set(room_id, {
           socket: socket_other.concat(newData),
-          token: token_other.concat(newData),
+          token: token_other,
         });
       } else {
         ch.rooms.set(room_id, {
           socket: [newData],
-          token: [newData],
+          token: [],
         });
       }
       //users set
       ch.users.set(nickname, {
         socket: newData,
-        token: origin.token.filter((c) => c.room_id != room_id).concat(newData) || [],
+        token: origin.token.filter((c) => c.room_id != room_id) || [],
         socket_id: origin.socket_id,
         token_id: origin.token_id,
         enterDate: origin.enterDate,
@@ -109,11 +109,11 @@ export const chatClose = async (socket_id: string) => {
         let room_id = origin.socket?.room_id;
         if (!!room_id) {
           //room set
-          let newData = Connection(
+          let newData_token = Connection(
             room_id,
             nickname,
             origin.token_id,
-            origin.socket_id
+            ""
           );
           let room = ch.rooms.get(room_id);
           if (!!room) {
@@ -123,7 +123,7 @@ export const chatClose = async (socket_id: string) => {
             );
             ch.rooms.set(room_id, {
               socket: socket_other,
-              token: token_other.concat(newData),
+              token: token_other.concat(newData_token),
             });
           } else {
             console.log("err chatClose room data change", room_id, nickname);
@@ -133,7 +133,7 @@ export const chatClose = async (socket_id: string) => {
           let token_my_other = origin.token.filter((c) => c.room_id != room_id);
           ch.users.set(nickname, {
             socket: undefined,
-            token: token_my_other.concat(newData),
+            token: token_my_other.concat(newData_token),
             socket_id: origin.socket_id,
             token_id: origin.token_id,
             enterDate: origin.enterDate,

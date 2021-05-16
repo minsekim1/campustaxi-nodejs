@@ -69,7 +69,7 @@ app.prepare().then(() => {
             });
           }
           //#endregion SELECT MESSAGE
-          console.log("chatEnter", ch, b);
+          console.log("chatEnter", ch);
         });
     });
     //#endregion chatEnter 채팅방 접속
@@ -187,7 +187,7 @@ app.prepare().then(() => {
     socket.on("disconnect", () => {
       chatClose(socket.id).then((b) => {
         console.log(new Date().toLocaleString(), "]disc/", socket.id);
-        console.log("disconnect", ch, b);
+        // console.log("disconnect", ch, b);
         //socket delete
         ch.sockets.delete(socket.id)
       });
@@ -198,7 +198,7 @@ app.prepare().then(() => {
     socket.on("logout", () => {
       Logout(socket.id).then((b) => {
         console.log(new Date().toLocaleString(), "]logu/", socket.id);
-        console.log("logout", ch, b);
+        // console.log("logout", ch, b);
       });
     });
     //#endregion logout 로그아웃
