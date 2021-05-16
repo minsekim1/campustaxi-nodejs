@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="7bc5510f-739d-4db0-a783-944955d9abe1" name="kellyServer">
+        <fileTransfer rootFolder="/home/ubuntu/kellyServer" accessType="SFTP" host="222.112.225.80" port="7071" sshConfigId="858bc03d-d6d8-49e0-8454-3ea0036da862" sshConfig="ubuntu@222.112.225.80:7071 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
