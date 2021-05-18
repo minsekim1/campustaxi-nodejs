@@ -3,6 +3,8 @@ const next = require("next");
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
+import {} from "./premium/premium"
+
 import { send } from "./config/firebase/firebase";
 import * as rc from "./config/redis/redis";
 import { l } from "./config/redis/redis_test";
