@@ -11,30 +11,39 @@ const rc = redis.createClient({ expire: 3600 });
 
 // APIs
 //1-1 setSocket getNicknameBySocket removeSocket isSocket
+//#region
 // setSocket('5Ag1qyhZ2kqvs3UnAAABa', 'campustaxiadmin')
 // getNicknameBySocket('5Ag1qyhZ2kqvs3UnAAABa').then(nickname=>{})
 // removeSocket('5Ag1qyhZ2kqvs3UnAAABa')
 // isSocket('5Ag1qyhZ2kqvs3UnAAABa').then(boolean=>{})
+//#endregion
 
 //2-1 setToken getNicknameByToken removeToken isToken
+//#region
 // setToken('5Ag1qyhZ2kqvs3UnAAABa', 'campustaxiadmin')
 // getNicknameByToken('5Ag1qyhZ2kqvs3UnAAABa').then(nickname=>{})
 // removeToken('5Ag1qyhZ2kqvs3UnAAABa')
 // isToken('5Ag1qyhZ2kqvs3UnAAABa').then(boolean=>{})
+//#endregion
 
 //3-1 addNicknameInRoomToken getNicknamesInRoomToken removeNicknameInRoomToken isNicknameInRoomToken
+//#region
 // addNicknameInRoomToken(room_id, 'campustaxiadmin')
 // getNicknamesInRoomToken(room_id).then(nicknames=>{})
 // removeNicknameInRoomToken(room_id,'campustaxiadmin')
 // isNicknameInRoomToken(room_id,'campustaxiadmin').then(boolean=>{})
+//#endregion
 
 //4-1 addNicknameInRoomSocket getNicknamesInRoomSocket removeNicknameInRoomSocket isNicknameInRoomSocket
+//#region
 // addNicknameInRoomSocket(room_id, 'campustaxiadmin')
 // getNicknamesInRoomSocket(room_id).then(nicknames=>{})
 // removeNicknameInRoomSocket(room_id,'campustaxiadmin')
 // isNicknameInRoomSocket(room_id,'campustaxiadmin').then(boolean=>{})
+//#endregion
 
 //5-1 setUser getUserAll getUser(4) removeUser isUser
+//#region
 // setUser('campustaxiadmin', 'campustaxiadmin')
 // getUserSocId('campustaxiadmin').then(data=>{})
 // getUserTokId('campustaxiadmin').then(data=>{})
@@ -42,13 +51,16 @@ const rc = redis.createClient({ expire: 3600 });
 // getUserAll('campustaxiadmin').then(datas=>{})
 // removeUser('campustaxiadmin')
 // isUser('campustaxiadmin').then(boolean=>{})
+//#endregion
 
 //6-1 addRoomidInUser getRoomidsInUser removeRoomidInUser removeRoomidInUserAll isRoomidInUser
+//#region
 // addRoomidInUser('campustaxiadmin', room_id)
 // getRoomidsInUser('campustaxiadmin').then(room_ids=>{})
 // removeRoomidInUser('campustaxiadmin',room_id)
 // removeRoomidInUserAll('campustaxiadmin')
 // isRoomidInUser('campustaxiadmin', room_id).then(boolean=>{})
+//#endregion
 
 //#region 키 유효 설정 3일
 const ex = (key: string) => {
@@ -62,7 +74,7 @@ export const setSocket = (socket_id: string, nickname: string) => {
   rc.set("@soc" + socket_id, nickname);
   ex("@soc" + socket_id);
 };
-export const getNicknameBySocket = (socket_id: string) => {
+export const getNicknameBySocket = (socket_id: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.get("@soc" + socket_id, (e: any, reply: string) => resolve(reply));
   });
@@ -82,7 +94,7 @@ export const setToken = (token_id: string, nickname: string) => {
   rc.set("@tok" + token_id, nickname);
   ex("@tok" + token_id);
 };
-export const getNicknameByToken = (token_id: string) => {
+export const getNicknameByToken = (token_id: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.get("@tok" + token_id, (e: any, reply: string) => resolve(reply));
   });
@@ -102,7 +114,7 @@ export const addNicknameInRoomToken = (room_id: string, nickname: string) => {
   rc.sadd("@roomTok" + room_id, nickname);
   ex("@roomTok" + room_id);
 };
-export const getNicknamesInRoomToken = (room_id: string) => {
+export const getNicknamesInRoomToken = (room_id: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
     rc.smembers("@roomTok" + room_id, (e: any, reply: string[]) =>
       resolve(reply)
@@ -129,7 +141,7 @@ export const addNicknameInRoomSocket = (room_id: string, nickname: string) => {
   rc.sadd("@roomSoc" + room_id, nickname);
   ex("@roomSoc" + room_id);
 };
-export const getNicknamesInRoomSocket = (room_id: string) => {
+export const getNicknamesInRoomSocket = (room_id: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
     rc.smembers("@roomSoc" + room_id, (e: any, reply: string[]) =>
       resolve(reply)
@@ -164,39 +176,39 @@ export const setUser = (nickname: string, socId: string, tokId: string) => {
   );
   ex("@usr" + nickname);
 };
-export const getUserAll = (socket_id: string) => {
+export const getUserAll = (nickname: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
-    rc.hgetall("@usr" + socket_id, (e: any, reply: string) => resolve(reply));
+    rc.hgetall("@usr" + nickname, (e: any, reply: string) => resolve(reply));
   });
 };
-export const getUserSocId = (socket_id: string) => {
+export const getUserSocId = (nickname: string):Promise<string> => {
   return new Promise((resolve: any) => {
-    rc.hget("@usr" + socket_id, "socId", (e: any, reply: string) =>
+    rc.hget("@usr" + nickname, "socId", (e: any, reply: string) =>
       resolve(reply)
     );
   });
 };
-export const getUserTokId = (socket_id: string) => {
+export const getUserTokId = (nickname: string):Promise<string> => {
   return new Promise((resolve: any) => {
-    rc.hget("@usr" + socket_id, "tokId", (e: any, reply: string) =>
+    rc.hget("@usr" + nickname, "tokId", (e: any, reply: string) =>
       resolve(reply)
     );
   });
 };
-export const getUserEnterDate = (socket_id: string) => {
+export const getUserEnterDate = (nickname: string):Promise<string> => {
   return new Promise((resolve: any) => {
-    rc.hget("@usr" + socket_id, "enterDate", (e: any, reply: string) =>
+    rc.hget("@usr" + nickname, "enterDate", (e: any, reply: string) =>
       resolve(reply)
     );
   });
 };
 
-export const removeUser = (socket_id: string) => {
-  rc.del("@usr" + socket_id);
+export const removeUser = (nickname: string) => {
+  rc.del("@usr" + nickname);
 };
-export const isUser = (socket_id: string) =>
+export const isUser = (nickname: string) =>
   new Promise((resolve: any) =>
-    rc.exists("@usr" + socket_id, (e: any, reply: string) => resolve(reply))
+    rc.exists("@usr" + nickname, (e: any, reply: string) => resolve(reply))
   );
 //#endregion User
 
@@ -205,7 +217,7 @@ export const addRoomidInUser = (nickname: string, room_id: string) => {
   rc.sadd("@usrRoom" + nickname, room_id);
   ex("@usrRoom" + room_id);
 };
-export const getRoomidsInUser = (nickname: string) => {
+export const getRoomidsInUser = (nickname: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
     rc.smembers("@usrRoom" + nickname, (e: any, reply: string[]) =>
       resolve(reply)
