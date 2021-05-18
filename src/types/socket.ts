@@ -1,4 +1,7 @@
+import { getNicknameBySocket, isSocket, removeSocket } from './../config/redis/redis';
 //#region Socket Token API
+
+import {  setSocket } from "../config/redis/redis";
 
 type Connection = {
   room_id: string;
@@ -46,6 +49,10 @@ export const appEnter = async (
 ) => {
   // sockets set
   ch.sockets.set(socket_id, nickname);
+  removeSocket(socket_id)
+  console.log('isSocket',isSocket(socket_id))
+  console.log('getNicknameBySocket',getNicknameBySocket(socket_id))
+  // console.log(getNicknameBySocket(socket_id))
   // user set
   try {
     ch.users.set(nickname, {
