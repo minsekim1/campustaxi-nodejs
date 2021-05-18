@@ -43,6 +43,7 @@ export const sql_message_select = async (
   room_id: Message["room_id"]
 ): Promise<Array<Message>> => {
   return new Promise(async (resolve) => {
+    console.log('sql_message_select',room_id,db_conn)
     db_conn.query(sql_select, [room_id], (err: any, results: any) => {
       if (err) {
         console.error("error connecting: " + err.stack);
