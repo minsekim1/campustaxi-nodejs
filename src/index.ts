@@ -3,11 +3,11 @@ const next = require("next");
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
-import {} from "./premium/premium"
+import {} from "./premium/premium";
 
 import { send } from "./config/firebase/firebase";
 import * as rc from "./config/redis/redis";
-import { l } from "./config/redis/redis_test";
+import { arraysEqual, l } from "./config/redis/redis_test";
 import {
   Message,
   sql_message_insert,
@@ -16,6 +16,7 @@ import {
 import * as soc from "./types/socket";
 import { appEnter, chatClose, chatEnter, Logout } from "./types/socket";
 import { sql_userid_get, User } from "./types/User";
+import { ChatRoom, sql_room_get, sql_room_get_map } from "./types/ChatRoom";
 
 //#region     서버 배포 설정
 app.prepare().then(() => {
@@ -73,6 +74,42 @@ app.prepare().then(() => {
       chatClose(c.nickname, c.room_id);
     });
     //#endregion chatClose 채팅방 나가기
+
+    //#region 유저 방 목록 가져오기
+    socket.on("chatRooms", (c: { nickname: string }) => {
+      rc.getRoomidsInUser(c.nickname).then((roomids) => {
+        //#region Get ROOM
+        if (!arraysEqual(roomids, []))
+          db_conn.query(
+            sql_room_get(roomids),
+            (err: any, chatRooms: ChatRoom[]) => {
+              if (err) {
+                console.error("error connecting: " + err.stack);
+                return;
+              }
+              //현재인원 추가하기
+              let maxlength = chatRooms.length - 1;
+              let chatRoomsNow: ChatRoom[] = [];
+              console.log("chatRoomsNow1");
+              chatRooms.map(async (chatRoom, i) => {
+                let length = await rc.getLengthInRoomUsers(chatRoom.id);
+                chatRoomsNow.push({ ...chatRoom, current: length });
+                if (maxlength == i) {
+                  io.to(socket.id).emit("chatRooms", {
+                    chatRooms: chatRoomsNow,
+                  });
+                }
+              });
+            }
+          );
+        else
+          io.to(socket.id).emit("chatRooms", {
+            chatRooms: [],
+          });
+        //#endregion Get ROOM
+      });
+    });
+    //#endregion 유저 방 목록 가져오기
 
     //#region appEnter 앱 접속
     // data :  nickname  token
@@ -145,20 +182,67 @@ app.prepare().then(() => {
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
     socket.on("disconnect", () => {
       l("disc", socket.id);
+      //socet to token
       rc.getNicknameBySocket(socket.id).then((nickname) =>
         chatClose(socket.id, nickname)
       );
+      //socket delete
+      rc.removeSocket(socket.id);
     });
     //#endregion 앱 종료
 
-    // #region logout 로그아웃
-    socket.on("logout", () => {
-      rc.getNicknameBySocket(socket.id).then((nickname) => {
-        Logout(nickname);
-        l("logu", nickname, socket.id);
-      });
+    //#region logout 로그아웃
+    socket.on("logout", (c: { nickname: string }) => {
+      Logout(c.nickname);
+      l("logu", c.nickname, socket.id);
     });
     //#endregion logout 로그아웃
+
+    //#region 지도 데이터
+    socket.on(
+      "chatRoomsInMap",
+      (c: {
+        minLat: number;
+        maxLat: number;
+        minLon: number;
+        maxLon: number;
+      }) => {
+        //#region Get ROOM map
+        db_conn.query(
+          sql_room_get_map,
+          [
+            c.maxLat,
+            c.maxLon,
+            c.minLat,
+            c.minLon,
+            c.maxLat,
+            c.maxLon,
+            c.minLat,
+            c.minLon,
+          ],
+          (err: any, chatRooms: ChatRoom[]) => {
+            if (err) {
+              console.error("error connecting: " + err.stack);
+              return;
+            }
+            //현재인원 추가하기
+              let maxlength = chatRooms.length - 1;
+              let chatRoomsNow: ChatRoom[] = [];
+              chatRooms.map(async (chatRoom, i) => {
+                let length = await rc.getLengthInRoomUsers(chatRoom.id);
+                chatRoomsNow.push({ ...chatRoom, current: length });
+                if (maxlength == i) {
+                  io.to(socket.id).emit("chatRoomsInMap", {
+                    chatRooms: chatRoomsNow,
+                  });
+                }
+              });
+          }
+        );
+        //#endregion Get ROOM map
+      }
+    );
+    //#endregion 지도 데이터
   });
   //#endregion 웹소켓 설정
 

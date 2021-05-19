@@ -53,15 +53,16 @@ const rc = redis.createClient({ expire: 3600 });
 // isUser('campustaxiadmin').then(boolean=>{})
 //#endregion
 
-//6-1 addRoomidInUser getRoomidsInUser removeRoomidInUser removeRoomidInUserAll isRoomidInUser
+//6-1 addRoomidInUser getRoomidsInUser removeRoomidInUser removeRoomidInUserAll 
 //#region
 // addRoomidInUser('campustaxiadmin', room_id)
 // getRoomidsInUser('campustaxiadmin').then(room_ids=>{})
 // removeRoomidInUser('campustaxiadmin',room_id)
 // removeRoomidInUserAll('campustaxiadmin')
-// isRoomidInUser('campustaxiadmin', room_id).then(boolean=>{})
 //#endregion
 
+//7-1 getLengthInRoomUsers
+// getLengthInRoomUsers(room_id).then(length=>{})
 //#region 키 유효 설정 3일
 const ex = (key: string) => {
   let todayEnd = new Date().setDate(new Date().getDate() + 3);
@@ -176,7 +177,12 @@ export const setUser = (nickname: string, socId: string, tokId: string) => {
   );
   ex("@usr" + nickname);
 };
-export const getUserAll = (nickname: string):Promise<string[]> => {
+type usr = {
+	socId: string;
+	tokId: string;
+	enterDate: Date;
+}
+export const getUserAll = (nickname: string):Promise<usr> => {
   return new Promise((resolve: any) => {
     rc.hgetall("@usr" + nickname, (e: any, reply: string) => resolve(reply));
   });
@@ -230,7 +236,22 @@ export const removeRoomidInUser = (nickname: string, room_id: string) => {
 };
 export const removeRoomidInUserAll = (nickname: string) =>
   rc.del("@usrRoom" + nickname);
+
+export const AllKeysDelete = () => {
+  rc.flushdb();
+}
 //#endregion User
+
+//#region 7 getLengthInRoomUsers(room_id).then(length=>{})
+export const getLengthInRoomUsers = (room_id: any):Promise<number> =>
+  new Promise(async(resolve: any) => {
+    let arr1 = await getNicknamesInRoomSocket(room_id)
+    let arr2 = await getNicknamesInRoomToken(room_id)
+    resolve(arr1.length+arr2.length)
+  }
+    // rc.exists("@usr" + nickname, (e: any, reply: string) => resolve(reply))
+  );
+//#endregion
 
 // //Redis Example
 // /*

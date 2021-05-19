@@ -22,8 +22,12 @@ export const chatEnter = async (nickname: string, room_id: string) => {
 };
 //채팅방 소켓 닫기. fcm만 활성화됌.
 export const chatClose = async (nickname: string, room_id: string) => {
-  rc.removeNicknameInRoomSocket(room_id, nickname);
-  rc.addNicknameInRoomToken(room_id, nickname);
+  rc.getNicknamesInRoomSocket(room_id).then((nicknames) => {
+    if (nicknames.includes(nickname)) {
+      rc.removeNicknameInRoomSocket(room_id, nickname);
+      rc.addNicknameInRoomToken(room_id, nickname);
+    }
+  });
 };
 //채팅방 모든 소켓 닫기. fcm만 활성화됌.(앱종료 또는 앱백그라운드)
 export const chatCloseAll = async (socket_id: string) => {
@@ -46,6 +50,7 @@ export const chatExit = async (nickname: string, room_id: string) => {
 //로그아웃을 했을떄만 쓰고, 앱종료에는 chatClose를 쓸것. fcm과 소켓모두 삭제한다.
 // *주의: 로그아웃을 한다고 유저가 접속한 모든 방을 exit처리해서는 안된다. 다시 로그인을 했을시 내 채팅방 목록에 떠야하기때문.
 export const Logout = (nickname: string) => {
+  console.log("nickname", nickname);
   rc.getRoomidsInUser(nickname).then((roomids) => {
     roomids.map((roomid) => {
       //@roomSoc @roomTok delete
@@ -54,9 +59,10 @@ export const Logout = (nickname: string) => {
     });
     //@soc @tok @usr @usrRoom delete
     rc.getUserTokId(nickname).then((tokid) => rc.removeToken(tokid));
-    rc.getUserSocId(nickname).then((socid)=> rc.removeSocket(socid))
+    rc.getUserSocId(nickname).then((socid) => rc.removeSocket(socid));
     rc.removeRoomidInUserAll(nickname);
     rc.removeUser(nickname);
   });
 };
+
 //#endregion Socket Token API`
