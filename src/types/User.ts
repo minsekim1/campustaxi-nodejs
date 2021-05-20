@@ -2,14 +2,29 @@ const sql_userid =
   "SELECT id FROM campustaxi_db.users_tb WHERE nickname=(?) LIMIT 1;";
 const sql_usernickname =
   "SELECT nickname FROM campustaxi_db.users_tb WHERE id=(?) LIMIT 1;";
-
+export const sql_usernicknames = (nicknames: string[]) => {
+  let query = 
+    "SELECT nickname, uuid, gender, campus_name, imagepath FROM campustaxi_db.users_tb WHERE nickname=\'"+nicknames[0]+"\'";
+  nicknames.map((nickname, i) => 
+  {
+    if (i!=0)
+      query += ' or nickname=\'' + nickname + "\'"
+    }
+  )
+  return query += ";"
+}
 /*
-  //#region GET USER ID
-  sql_userid_get(db_conn,nickname).then(id=>{
-  
-  })
-  //#endregion GET USER ID
+  //#region Get ROOM Users
+db_conn.query(sql_usernicknames([nicknames]), (err: any, results: any) => {
+  if (err) {
+    console.error("error connecting: " + err.stack);
+    return;
+  }
+  console.log("results", results);
+});
+//#endregion Get ROOM Users
 */
+  //#endregion GET USER ID
 
 //#region GET USER Nickname
 export const sql_userNickname_get = async (

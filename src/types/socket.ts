@@ -6,6 +6,9 @@ export const appEnter = async (
   socket_id: string,
   token: string
 ) => {
+  // @soc @tok reset 이미 유저 정보가 있다면 소켓/토큰을 지운다.
+  rc.getUserSocId(nickname).then((tokid)=>rc.removeToken(tokid))
+  rc.getUserSocId(nickname).then((socid)=>rc.removeSocket(socid))
   // @soc @tok @usr set
   rc.setSocket(socket_id, nickname);
   rc.setToken(token, nickname);

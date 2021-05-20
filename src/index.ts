@@ -14,8 +14,8 @@ import {
   sql_message_select,
 } from "./types/Message";
 import * as soc from "./types/socket";
-import { appEnter, chatClose, chatEnter, Logout } from "./types/socket";
-import { sql_userid_get, User } from "./types/User";
+import { appEnter, chatClose, chatEnter, chatExit, Logout } from "./types/socket";
+import { sql_userid_get, sql_usernicknames, User } from "./types/User";
 import { ChatRoom, sql_room_get, sql_room_get_map } from "./types/ChatRoom";
 
 //#region     서버 배포 설정
@@ -75,11 +75,18 @@ app.prepare().then(() => {
     });
     //#endregion chatClose 채팅방 나가기
 
+    //#region chatExit 채팅방 나가기
+        socket.on("chatClose", (c: any) => {
+      l("cE", c.room_id, c.nickname);
+      chatExit(c.nickname, c.room_id);
+    });
+    //#endregion chatExit 채팅방 나가기
     //#region 유저 방 목록 가져오기
     socket.on("chatRooms", (c: { nickname: string }) => {
       rc.getRoomidsInUser(c.nickname).then((roomids) => {
         //#region Get ROOM
-        if (!arraysEqual(roomids, []))
+
+        if (!arraysEqual(roomids, [])) {
           db_conn.query(
             sql_room_get(roomids),
             (err: any, chatRooms: ChatRoom[]) => {
@@ -90,7 +97,6 @@ app.prepare().then(() => {
               //현재인원 추가하기
               let maxlength = chatRooms.length - 1;
               let chatRoomsNow: ChatRoom[] = [];
-              console.log("chatRoomsNow1");
               chatRooms.map(async (chatRoom, i) => {
                 let length = await rc.getLengthInRoomUsers(chatRoom.id);
                 chatRoomsNow.push({ ...chatRoom, current: length });
@@ -102,7 +108,7 @@ app.prepare().then(() => {
               });
             }
           );
-        else
+        } else
           io.to(socket.id).emit("chatRooms", {
             chatRooms: [],
           });
@@ -226,23 +232,90 @@ app.prepare().then(() => {
               return;
             }
             //현재인원 추가하기
-              let maxlength = chatRooms.length - 1;
-              let chatRoomsNow: ChatRoom[] = [];
-              chatRooms.map(async (chatRoom, i) => {
-                let length = await rc.getLengthInRoomUsers(chatRoom.id);
-                chatRoomsNow.push({ ...chatRoom, current: length });
-                if (maxlength == i) {
-                  io.to(socket.id).emit("chatRoomsInMap", {
-                    chatRooms: chatRoomsNow,
-                  });
-                }
-              });
+            let maxlength = chatRooms.length - 1;
+            let chatRoomsNow: ChatRoom[] = [];
+            chatRooms.map(async (chatRoom, i) => {
+              let length = await rc.getLengthInRoomUsers(chatRoom.id);
+              chatRoomsNow.push({ ...chatRoom, current: length });
+              if (maxlength == i) {
+                io.to(socket.id).emit("chatRoomsInMap", {
+                  chatRooms: chatRoomsNow,
+                });
+              }
+            });
           }
         );
         //#endregion Get ROOM map
       }
     );
     //#endregion 지도 데이터
+
+    //#region 채팅방 정보 유저들 정보를 반환
+    socket.on("chatRoomsInUsers", async (c: { room_id: any }) => {
+      let nicknames = await rc.getNicknamesInRoomSocket(c.room_id);
+      nicknames = nicknames.concat(await rc.getNicknamesInRoomToken(c.room_id));
+      db_conn.query(
+        sql_usernicknames(nicknames),
+        (err: any, chatUsers: any) => {
+          if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+          }
+          io.to(socket.id).emit("chatRoomsInUsers", {
+            chatUsers: chatUsers,
+          });
+        }
+      );
+    });
+    //#endregion 채팅방 정보 유저들 정보를 반환
+
+    //#region 강퇴하기
+    socket.on(
+      "kickUser",
+      async (c: { room_id: any; nickname: string; hostname: string }) => {
+        rc.removeNicknameInRoomSocket(c.room_id, c.nickname);
+        rc.removeNicknameInRoomToken(c.room_id, c.nickname);
+        rc.removeRoomidInUser(c.nickname, c.room_id);
+        //강퇴 당한 사람에게 소켓전송
+        rc.getUserSocId(c.nickname).then((socid) =>
+          io
+            .to(socid)
+            .emit("kicked", { hostname: c.hostname, room_id: c.room_id })
+        );
+        //강퇴 당한 사람에게 FCM전송
+        rc.getUserTokId(c.nickname).then((tokid) =>
+          send({
+            clientToken: tokid,
+            title: c.hostname + " 유저의 방",
+            mesage: "해당 유저의 방에서 강퇴 당하셨습니다. 방번호:" + c.room_id,
+            // click_action: "string",
+            // icon: ""
+          })
+        );
+        //강퇴하고 나서 유저 목록을 해당방 유저들한테 다시 전송함
+        let nicknames = await rc.getNicknamesInRoomSocket(c.room_id);
+        nicknames = nicknames.concat(
+          await rc.getNicknamesInRoomToken(c.room_id)
+        );
+        db_conn.query(
+          sql_usernicknames(nicknames),
+          (err: any, chatUsers: any) => {
+            if (err) {
+              console.error("error connecting: " + err.stack);
+              return;
+            }
+            nicknames.map((nickname) =>
+              rc.getUserSocId(nickname).then((socid) =>
+                io.to(socket.id).emit("chatRoomsInUsers", {
+                  chatUsers: chatUsers,
+                })
+              )
+            );
+          }
+        );
+      }
+    );
+    //#endregion 강퇴하기
   });
   //#endregion 웹소켓 설정
 
