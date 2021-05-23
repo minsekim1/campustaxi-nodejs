@@ -10,6 +10,7 @@
     "fcm-node": "^1.6.1",
     "firebase": "^8.4.2",
     "firebase-admin": "^9.7.0",
+    "google-auth-library": "^7.0.4",
     "mysql": "^2.18.1",
     "next": "10.2.0",
     "pm2": "^4.5.6",
@@ -17,7 +18,8 @@
     "react-dom": "^17.0.2",
     "redis": "^3.1.2",
     "socket.io": "^3.0.3",
-    "source-map-support": "^0.5.19"
+    "source-map-support": "^0.5.19",
+    "xmlhttprequest": "^1.8.0"
   },
   "scripts": {
     "start": "ts-node ./src/index.ts",

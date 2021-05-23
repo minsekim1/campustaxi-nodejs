@@ -3594,7 +3594,7 @@
     "jws" "^4.0.0"
     "lru-cache" "^6.0.0"
 
-"google-auth-library@^7.0.0", "google-auth-library@^7.0.2":
+"google-auth-library@^7.0.0", "google-auth-library@^7.0.2", "google-auth-library@^7.0.4":
   "integrity" "sha512-o8irYyeijEiecTXeoEe8UKNEzV1X+uhR4b2oNdapDMZixypp0J+eHimGOyx5Joa3UAeokGngdtDLXtq9vDqG2Q=="
   "resolved" "https://registry.npmjs.org/google-auth-library/-/google-auth-library-7.0.4.tgz"
   "version" "7.0.4"
@@ -8091,7 +8091,7 @@
   "resolved" "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-11.0.1.tgz"
   "version" "11.0.1"
 
-"xmlhttprequest@1.8.0":
+"xmlhttprequest@^1.8.0", "xmlhttprequest@1.8.0":
   "integrity" "sha1-Z/4HXFwk/vOfnWX197f+dRcZaPw="
   "resolved" "https://registry.npmjs.org/xmlhttprequest/-/xmlhttprequest-1.8.0.tgz"
   "version" "1.8.0"

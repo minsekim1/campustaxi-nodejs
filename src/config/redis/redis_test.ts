@@ -16,6 +16,49 @@ import {
 } from "../../types/socket";
 import { getUserAll } from "./redis";
 
+import qs from "qs";
+
+const CLIENT_ID = "1054249413075-cm20k95g3ia8s2as4r997b42r90sl8fl.apps.googleusercontent.com";
+// const AUTHORIZE_URI = "https://accounts.google.com/o/oauth2/v2/auth";
+
+// const queryStr = qs.stringify({
+//   client_id: CLIENT_ID,
+//   redirect_uri: 'http://localhost:3000',
+//   response_type: "token",
+//   scope: "https://www.googleapis.com/auth/contacts.readonly",
+// });
+
+// const loginUrl = AUTHORIZE_URI + "?" + queryStr;
+// console.log(loginUrl)
+
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+function onSignIn(googleUser:any) {
+  var id_token = googleUser.getAuthResponse().id_token;
+}
+var xhr = new XMLHttpRequest();
+xhr.open('POST', 'https://yourbackend.example.com/tokensignin');
+xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+xhr.onload = function() {
+  console.log('Signed in as: ' + xhr.responseText);
+};
+xhr.send('idtoken=' + 'id_token');
+
+const {OAuth2Client} = require('google-auth-library');
+const client = new OAuth2Client(CLIENT_ID);
+async function verify() {
+  const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+      // Or, if multiple clients access the backend:
+      //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+  });
+  const payload = ticket.getPayload();
+  const userid = payload['sub'];
+  // If request specified a G Suite domain:
+  // const domain = payload['hd'];
+}
+verify().catch(console.error);
+
 export const l = (...args: string[]) => {
   let msg = new Date().toLocaleString() + "\\";
   args.map((arg) => (msg = msg.concat(arg) + "\\"));
