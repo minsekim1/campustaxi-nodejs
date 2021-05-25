@@ -75,9 +75,10 @@ app.prepare().then(() => {
         res.end(data);
       });
       //#endregion 구글 정기결제 확인 api
-    } else if (path == "/googleiab/token/redirect") {
-      
     }
+    // else if (path == "/googleiab/token/redirect") {
+
+    // }
     //#endregion 라우팅 설정: 페이지를 구분합니다.
   });
   const io = require("socket.io")(httpServer);
