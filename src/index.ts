@@ -76,17 +76,7 @@ app.prepare().then(() => {
       });
       //#endregion 구글 정기결제 확인 api
     } else if (path == "/googleiab/token/redirect") {
-      //code 유무를 확인.
-      let tokenStorage = {
-        access_token: null,
-        token_type: null,
-        expires_in: null,
-        refresh_token: null,
-      };
-      if (req.query.code === null || req.query.code === undefined) {
-        res.send(tokenStorage);
-        return;
-      }
+      
     }
     //#endregion 라우팅 설정: 페이지를 구분합니다.
   });
@@ -398,36 +388,6 @@ app.prepare().then(() => {
       process.exit(err ? 1 : 0);
     });
   });
-
-  // //#region 구글 정기결제 확인 api
-
-  //   //authorization code를 포함하면 access token과 교환할 수 있도록 한다.
-  //   let url = "https://www.googleapis.com/oauth2/v4/token";
-  //   let payload = {
-  //     grant_type: "authorization_code", //OAuth 2.0 스펙에 포함된 필드로 반드시 'authorization_code'로 입력한다.
-  //     code: req.query.code, //토큰 요청을 통해서 얻은 코드
-  //     client_id: client_id,
-  //     client_secret: client_secret,
-  //     redirect_uri: redirect_uri,
-  //   };
-
-  //   request.post(url, { form: payload }, function (
-  //     error: any,
-  //     response: any,
-  //     body: any
-  //   ) {
-  //     let parseBody = JSON.parse(body);
-  //     tokenStorage.access_token = parseBody.access_token;
-  //     tokenStorage.token_type = parseBody.token_type;
-  //     tokenStorage.expires_in = parseBody.expires_in;
-  //     tokenStorage.refresh_token = parseBody.refresh_token;
-
-  //     //TODO : refresh_token으로 1시간이 되기 전에 access token으로 교환되도록 한다.
-
-  //     res.send(tokenStorage);
-  //   });
-  // });
-  // //#endregion 구글 정기결제 확인 api
 
   httpServer.listen(3000);
 });
