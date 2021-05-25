@@ -14,14 +14,19 @@ import {
   sql_message_select,
 } from "./types/Message";
 import * as soc from "./types/socket";
-import { appEnter, chatClose, chatEnter, chatExit, Logout } from "./types/socket";
+import {
+  appEnter,
+  chatClose,
+  chatEnter,
+  chatExit,
+  Logout,
+} from "./types/socket";
 import { sql_userid_get, sql_usernicknames, User } from "./types/User";
 import { ChatRoom, sql_room_get, sql_room_get_map } from "./types/ChatRoom";
 
 //#region     서버 배포 설정
 app.prepare().then(() => {
   const server = express();
-  const http = require("http").Server(app);
   let isAppGoingToBeClosed = false; // SIGINT 시그널을 받았는지 여부. 앱이 곧 종료될 것임을 의미한다.
   server.use((req: any, res: any, next: any) => {
     // 프로세스 종료 예정이라면 리퀘스트를 처리하지 않는다
@@ -30,12 +35,63 @@ app.prepare().then(() => {
     }
     next();
   });
+
   var db_config = require("./config/mysql/database.js");
   var db_conn = db_config.init();
   db_config.connect(db_conn);
 
-  const httpServer = require("http").createServer();
+  const httpServer = require("http").createServer((req: any, res: any) => {
+    // URL을 받아올 변수를 선언합니다.
+    const url = require("url");
+    const fs = require("fs");
+    let path = url.parse(req.url).pathname;
+
+    //#region 라우팅 설정: 페이지를 구분합니다.
+    if (path == "/") {
+      // index.html로 응답합니다.
+      fs.readFile("./src/index/index.html", (err: any, data: any) => {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(data);
+      });
+    } else if (path == "/googleiab/token/request") {
+      //#region 구글 정기결제 확인 api
+      const CLIENT_ID =
+        "1054249413075-50k4d1kiibquaus5thlgtkqt2me6g1a5.apps.googleusercontent.com";
+      const AUTHORIZE_URI = "https://accounts.google.com/o/oauth2/v2/auth";
+      const CLIENT_SECRET = "DN63ztA6GtAP8bK_epO4kVt-";
+      const request = require("request");
+      const { google } = require("googleapis");
+      const OAuth2 = google.auth.OAuth2;
+      const client_id = process.env.clientid || CLIENT_ID;
+      const client_secret = process.env.clientsecret || CLIENT_SECRET;
+      const redirect_uri =
+        process.env.redirecturi ||
+        "https://726c9e683d2c.ngrok.io/googleiab/token/redirect"; //google api로 https로 설정
+      //구글 API 중 접근해야할 곳을 다수로 요청할 수 있다.
+      const scopes = ["https://www.googleapis.com/auth/androidpublisher"];
+
+      fs.readFile("./src/index/index.html", (err: any, data: any) => {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(data);
+      });
+      //#endregion 구글 정기결제 확인 api
+    } else if (path == "/googleiab/token/redirect") {
+      //code 유무를 확인.
+      let tokenStorage = {
+        access_token: null,
+        token_type: null,
+        expires_in: null,
+        refresh_token: null,
+      };
+      if (req.query.code === null || req.query.code === undefined) {
+        res.send(tokenStorage);
+        return;
+      }
+    }
+    //#endregion 라우팅 설정: 페이지를 구분합니다.
+  });
   const io = require("socket.io")(httpServer);
+
   //#endregion  서버 배포 설정
 
   //#region 웹소켓 설정
@@ -76,7 +132,7 @@ app.prepare().then(() => {
     //#endregion chatClose 채팅방 나가기
 
     //#region chatExit 채팅방 나가기
-        socket.on("chatClose", (c: any) => {
+    socket.on("chatClose", (c: any) => {
       l("cE", c.room_id, c.nickname);
       chatExit(c.nickname, c.room_id);
     });
@@ -332,16 +388,46 @@ app.prepare().then(() => {
     }
   });
 
-  process.on("SIGINT", function () {
+  process.on("SIGINT", () => {
     console.log("> received SIGNIT signal");
     isAppGoingToBeClosed = true; // 앱이 종료될 것
 
     // pm2 재시작 신호가 들어오면 서버를 종료시킨다.
-    listeningServer.close(function (err: any) {
+    listeningServer.close((err: any) => {
       console.log("server closed");
       process.exit(err ? 1 : 0);
     });
   });
+
+  // //#region 구글 정기결제 확인 api
+
+  //   //authorization code를 포함하면 access token과 교환할 수 있도록 한다.
+  //   let url = "https://www.googleapis.com/oauth2/v4/token";
+  //   let payload = {
+  //     grant_type: "authorization_code", //OAuth 2.0 스펙에 포함된 필드로 반드시 'authorization_code'로 입력한다.
+  //     code: req.query.code, //토큰 요청을 통해서 얻은 코드
+  //     client_id: client_id,
+  //     client_secret: client_secret,
+  //     redirect_uri: redirect_uri,
+  //   };
+
+  //   request.post(url, { form: payload }, function (
+  //     error: any,
+  //     response: any,
+  //     body: any
+  //   ) {
+  //     let parseBody = JSON.parse(body);
+  //     tokenStorage.access_token = parseBody.access_token;
+  //     tokenStorage.token_type = parseBody.token_type;
+  //     tokenStorage.expires_in = parseBody.expires_in;
+  //     tokenStorage.refresh_token = parseBody.refresh_token;
+
+  //     //TODO : refresh_token으로 1시간이 되기 전에 access token으로 교환되도록 한다.
+
+  //     res.send(tokenStorage);
+  //   });
+  // });
+  // //#endregion 구글 정기결제 확인 api
 
   httpServer.listen(3000);
 });
