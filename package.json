@@ -20,7 +20,9 @@
     "redis-server": "^1.2.2",
     "request": "^2.88.2",
     "socket.io": "^3.0.3",
-    "source-map-support": "^0.5.19"
+    "source-map-support": "^0.5.19",
+    "winston": "^3.3.3",
+    "winston-daily-rotate-file": "^4.5.5"
   },
   "scripts": {
     "start": "ts-node ./src/index.ts",

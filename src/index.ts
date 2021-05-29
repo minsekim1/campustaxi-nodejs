@@ -4,6 +4,7 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import {} from "./premium/premium";
+import { logger } from './config/winston';
 
 import { send } from "./config/firebase/firebase";
 import * as rc from "./config/redis/redis";
@@ -90,7 +91,7 @@ app.prepare().then(() => {
     //#region chatEnter 채팅방 접속
     // data : c.room_id c.nickname
     socket.on("chatEnter", (c: any) => {
-      l("cE", c.room_id, c.nickname, socket.id);
+      logger.info("cE "+ c.room_id+" "+ c.nickname+" "+ socket.id);
       chatEnter(c.nickname, c.room_id);
       // 채팅방 채팅 "들어갔음" 소켓 전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) => {
@@ -117,14 +118,14 @@ app.prepare().then(() => {
     //#region chatClose 채팅방 닫기 (fcm활성화)
     // data : c.room_id c.nickname
     socket.on("chatClose", (c: any) => {
-      l("cC", c.room_id, c.nickname, socket.id);
+      logger.info("cC " + c.room_id +" "+ c.nickname+" " + socket.id);
       chatClose(c.nickname, c.room_id);
     });
     //#endregion chatClose 채팅방 나가기
 
     //#region chatExit 채팅방 나가기
     socket.on("chatClose", (c: any) => {
-      l("cE", c.room_id, c.nickname);
+      logger.info("cE "+ c.room_id+" "+ c.nickname);
       chatExit(c.nickname, c.room_id);
     });
     //#endregion chatExit 채팅방 나가기
@@ -138,7 +139,7 @@ app.prepare().then(() => {
             sql_room_get(roomids),
             (err: any, chatRooms: ChatRoom[]) => {
               if (err) {
-                console.error("error connecting: " + err.stack);
+                logger.error("error connecting: " + err.stack);
                 return;
               }
               //현재인원 추가하기
@@ -167,7 +168,7 @@ app.prepare().then(() => {
     //#region appEnter 앱 접속
     // data :  nickname  token
     socket.on("appEnter", (c: any) => {
-      l("aE", c.nickname, socket.id);
+      logger.info("aE "+ c.nickname+" "+ socket.id);
       appEnter(c.nickname, socket.id, c.token);
     });
     //#endregion appEnter 앱 접속
@@ -182,7 +183,7 @@ app.prepare().then(() => {
     socket.on("chat", (c: ChatProps) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
       //c.room_id
-      l("chat", c.room_id, c.nickname, c.msg, socket.id);
+      logger.info("chat "+ c.room_id+" "+ c.nickname+" "+ c.msg+" "+ socket.id);
       //socket 방안에 접속해 있는 유저에게 채팅전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) =>
         nicknames.map((nickname) =>
@@ -234,7 +235,7 @@ app.prepare().then(() => {
     //#region disconnect 앱 종료
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
     socket.on("disconnect", () => {
-      l("disc", socket.id);
+      logger.info("disc "+ socket.id);
       //socet to token
       rc.getNicknameBySocket(socket.id).then((nickname) =>
         chatClose(socket.id, nickname)
@@ -247,7 +248,7 @@ app.prepare().then(() => {
     //#region logout 로그아웃
     socket.on("logout", (c: { nickname: string }) => {
       Logout(c.nickname);
-      l("logu", c.nickname, socket.id);
+      logger.info("logu "+ c.nickname+" "+ socket.id);
     });
     //#endregion logout 로그아웃
 
@@ -275,7 +276,7 @@ app.prepare().then(() => {
           ],
           (err: any, chatRooms: ChatRoom[]) => {
             if (err) {
-              console.error("error connecting: " + err.stack);
+              logger.error("error connecting: " + err.stack);
               return;
             }
             //현재인원 추가하기
@@ -305,7 +306,7 @@ app.prepare().then(() => {
         sql_usernicknames(nicknames),
         (err: any, chatUsers: any) => {
           if (err) {
-            console.error("error connecting: " + err.stack);
+            logger.error("error connecting: " + err.stack);
             return;
           }
           io.to(socket.id).emit("chatRoomsInUsers", {
@@ -348,7 +349,7 @@ app.prepare().then(() => {
           sql_usernicknames(nicknames),
           (err: any, chatUsers: any) => {
             if (err) {
-              console.error("error connecting: " + err.stack);
+              logger.error("error connecting: " + err.stack);
               return;
             }
             nicknames.map((nickname) =>
@@ -370,22 +371,22 @@ app.prepare().then(() => {
 
   const listeningServer = server.listen((err: any) => {
     if (err) throw err;
-    console.log(`> Ready on http://localhost:${port}`);
+    logger.info(`> Ready on http://localhost:${port}`);
 
     // PM2에게 앱 구동이 완료되었음을 전달한다
     if (process.send) {
       process.send("ready");
-      console.log("sent ready signal to PM2 at", new Date());
+      logger.info("sent ready signal to PM2 at", new Date());
     }
   });
 
   process.on("SIGINT", () => {
-    console.log("> received SIGNIT signal");
+    logger.info('> received SIGNIT signal');
     isAppGoingToBeClosed = true; // 앱이 종료될 것
 
     // pm2 재시작 신호가 들어오면 서버를 종료시킨다.
     listeningServer.close((err: any) => {
-      console.log("server closed");
+      logger.warn('server closed')
       process.exit(err ? 1 : 0);
     });
   });

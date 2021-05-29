@@ -1,4 +1,5 @@
 var mysql = require("mysql");
+import { logger } from '../winston';
 
 const fs = require("fs");
 const key = JSON.parse(
@@ -21,17 +22,15 @@ var db_info = {
   database: key.DATABASE_NAME,
 };
 
-// console.log(db_info)
-
 module.exports = {
   init: function () {
     return mysql.createConnection(db_info);
   },
   connect: function (conn) {
     conn.connect(function (err) {
-      if (err) console.error("mysql connection error : " + err);
+      if (err) logger.error("mysql connection error : " + err);
       else {
-        console.log("mysql is connected successfully!");
+        logger.info("mysql is connected successfully!");
       }
     });
   }
