@@ -23,7 +23,7 @@ var db_info = {
 };
 
 module.exports = {
-  init: function () {
+  init: ()=>{
     return mysql.createConnection(db_info);
   },
   connect: function (conn) {
