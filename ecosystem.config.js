@@ -9,7 +9,7 @@ module.exports = {
       wait_ready: true,
       listen_timeout: 10000,
       kill_timeout: 5000,
-      max_memory_restart: "10G",
+      max_memory_restart: "2000G",
       env: {
         NODE_ENV: "development",
       },
