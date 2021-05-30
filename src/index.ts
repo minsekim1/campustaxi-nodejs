@@ -124,7 +124,7 @@ app.prepare().then(() => {
     //#endregion chatClose 채팅방 나가기
 
     //#region chatExit 채팅방 나가기
-    socket.on("chatClose", (c: any) => {
+    socket.on("chatExit", (c: any) => {
       logger.info("cE "+ c.room_id+" "+ c.nickname);
       chatExit(c.nickname, c.room_id);
     });

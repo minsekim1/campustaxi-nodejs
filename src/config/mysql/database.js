@@ -5,15 +5,7 @@ const fs = require("fs");
 const key = JSON.parse(
   fs.readFileSync("./src/config/mysql/secrets_nodejs.json")
 );
-
-// export const message_insertExample = (conn: any) => {
-//   query(
-//     conn,
-//     "INSERT INTO `campustaxi_db`.`massage_tb` (`massage`, `room_id`,`created_at`, `massage_type`, `is_deleted`) VALUES ('hi~!', 75, now(), 'NORMAL', false);"
-//   );
-//   query(conn, "select * from massage_tb");
-// };
-
+logger.info('mysql key:' + key)
 var db_info = {
   host: key.DATABASE_HOST,
   port: key.DATABASE_PORT,

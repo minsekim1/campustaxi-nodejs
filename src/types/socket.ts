@@ -53,18 +53,17 @@ export const chatExit = async (nickname: string, room_id: string) => {
 //로그아웃을 했을떄만 쓰고, 앱종료에는 chatClose를 쓸것. fcm과 소켓모두 삭제한다.
 // *주의: 로그아웃을 한다고 유저가 접속한 모든 방을 exit처리해서는 안된다. 다시 로그인을 했을시 내 채팅방 목록에 떠야하기때문.
 export const Logout = (nickname: string) => {
-  console.log("nickname", nickname);
   rc.getRoomidsInUser(nickname).then((roomids) => {
     roomids.map((roomid) => {
       //@roomSoc @roomTok delete
       rc.removeNicknameInRoomSocket(roomid, nickname);
       rc.removeNicknameInRoomToken(roomid, nickname);
     });
-    //@soc @tok @usr @usrRoom delete
+    //@soc @tok delete
     rc.getUserTokId(nickname).then((tokid) => rc.removeToken(tokid));
     rc.getUserSocId(nickname).then((socid) => rc.removeSocket(socid));
-    rc.removeRoomidInUserAll(nickname);
-    rc.removeUser(nickname);
+    // rc.removeRoomidInUserAll(nickname); => 유저 방목록은 남김
+    // rc.removeUser(nickname);
   });
 };
 
