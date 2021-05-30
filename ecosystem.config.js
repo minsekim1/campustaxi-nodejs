@@ -7,7 +7,7 @@ module.exports = {
       instances: 0,
       exec_mode: "cluster",
       wait_ready: true,
-      listen_timeout: 10000,
+      listen_timeout: 100000,
       kill_timeout: 5000,
       max_memory_restart: "2000G",
       env: {
