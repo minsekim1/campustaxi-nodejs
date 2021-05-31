@@ -4,7 +4,7 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const port = 3000;
 import {} from "./premium/premium";
-import { logger } from './config/winston';
+import { logger } from "./config/winston";
 
 import { send } from "./config/firebase/firebase";
 import * as rc from "./config/redis/redis";
@@ -46,6 +46,12 @@ app.prepare().then(() => {
     const url = require("url");
     const fs = require("fs");
     let path = url.parse(req.url).pathname;
+    const client_id =
+      "1054249413075-50k4d1kiibquaus5thlgtkqt2me6g1a5.apps.googleusercontent.com";
+    const client_secret = "DN63ztA6GtAP8bK_epO4kVt-";
+    const redirect_uri =
+      "https://726c9e683d2c.ngrok.io/googleiab/token/redirect"; //google api로 https로 설정
+    const request = require("request");
 
     //#region 라우팅 설정: 페이지를 구분합니다.
     if (path == "/") {
@@ -59,27 +65,58 @@ app.prepare().then(() => {
       const CLIENT_ID =
         "1054249413075-50k4d1kiibquaus5thlgtkqt2me6g1a5.apps.googleusercontent.com";
       const AUTHORIZE_URI = "https://accounts.google.com/o/oauth2/v2/auth";
-      const CLIENT_SECRET = "DN63ztA6GtAP8bK_epO4kVt-";
-      const request = require("request");
       const { google } = require("googleapis");
       const OAuth2 = google.auth.OAuth2;
-      const client_id = process.env.clientid || CLIENT_ID;
-      const client_secret = process.env.clientsecret || CLIENT_SECRET;
-      const redirect_uri =
-        process.env.redirecturi ||
-        "https://726c9e683d2c.ngrok.io/googleiab/token/redirect"; //google api로 https로 설정
+      const TOKEN_PATH = "./config/googletoken.json";
       //구글 API 중 접근해야할 곳을 다수로 요청할 수 있다.
       const scopes = ["https://www.googleapis.com/auth/androidpublisher"];
 
-      fs.readFile("./src/index/index.html", (err: any, data: any) => {
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(data);
+      let oauth2Client = new OAuth2(client_id, client_secret, redirect_uri);
+      let url = oauth2Client.generateAuthUrl({
+        access_type: "offline", // 'online'이 기본인데 refresh_token을 얻으러면 'offline'으로 입력
+        scope: scopes, // string으로된 Array 형태의 scope
+        approval_prompt: "force",
       });
+      logger.info("url", url);
+      // res.redirect(url);
       //#endregion 구글 정기결제 확인 api
-    }
-    // else if (path == "/googleiab/token/redirect") {
+    } else if (path == "/googleiab/token/redirect") {
+      let tokenStorage = {
+        access_token: null,
+        token_type: null,
+        expires_in: null,
+        refresh_token: null,
+      };
+      if (req.query.code === null || req.query.code === undefined) {
+        res.send(tokenStorage);
+        return;
+      }
 
-    // }
+      //authorization code를 포함하면 access token과 교환할 수 있도록 한다.
+      let url = "https://www.googleapis.com/oauth2/v4/token";
+      let payload = {
+        grant_type: "authorization_code", //OAuth 2.0 스펙에 포함된 필드로 반드시 'authorization_code'로 입력한다.
+        code: req.query.code, //토큰 요청을 통해서 얻은 코드
+        client_id: client_id,
+        client_secret: client_secret,
+        redirect_uri: redirect_uri,
+      };
+
+      request.post(
+        url,
+        { form: payload },
+        function (error: any, response: any, body: any) {
+          let parseBody = JSON.parse(body);
+          tokenStorage.access_token = parseBody.access_token;
+          tokenStorage.token_type = parseBody.token_type;
+          tokenStorage.expires_in = parseBody.expires_in;
+          tokenStorage.refresh_token = parseBody.refresh_token;
+          //TODO : refresh_token으로 1시간이 되기 전에 access token으로 교환되도록 한다.
+
+          res.send(tokenStorage);
+        }
+      );
+    }
     //#endregion 라우팅 설정: 페이지를 구분합니다.
   });
   const io = require("socket.io")(httpServer);
@@ -91,7 +128,7 @@ app.prepare().then(() => {
     //#region chatEnter 채팅방 접속
     // data : c.room_id c.nickname
     socket.on("chatEnter", (c: any) => {
-      logger.info("cE "+ c.room_id+" "+ c.nickname+" "+ socket.id);
+      logger.info("cE " + c.room_id + " " + c.nickname + " " + socket.id);
       chatEnter(c.nickname, c.room_id);
       // 채팅방 채팅 "들어갔음" 소켓 전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) => {
@@ -118,14 +155,14 @@ app.prepare().then(() => {
     //#region chatClose 채팅방 닫기 (fcm활성화)
     // data : c.room_id c.nickname
     socket.on("chatClose", (c: any) => {
-      logger.info("cC " + c.room_id +" "+ c.nickname+" " + socket.id);
+      logger.info("cC " + c.room_id + " " + c.nickname + " " + socket.id);
       chatClose(c.nickname, c.room_id);
     });
     //#endregion chatClose 채팅방 나가기
 
     //#region chatExit 채팅방 나가기
     socket.on("chatExit", (c: any) => {
-      logger.info("cE "+ c.room_id+" "+ c.nickname);
+      logger.info("cE " + c.room_id + " " + c.nickname);
       chatExit(c.nickname, c.room_id);
     });
     //#endregion chatExit 채팅방 나가기
@@ -168,7 +205,7 @@ app.prepare().then(() => {
     //#region appEnter 앱 접속
     // data :  nickname  token
     socket.on("appEnter", (c: any) => {
-      logger.info("aE "+ c.nickname+" "+ socket.id);
+      logger.info("aE " + c.nickname + " " + socket.id);
       appEnter(c.nickname, socket.id, c.token);
     });
     //#endregion appEnter 앱 접속
@@ -183,7 +220,9 @@ app.prepare().then(() => {
     socket.on("chat", (c: ChatProps) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
       //c.room_id
-      logger.info("chat "+ c.room_id+" "+ c.nickname+" "+ c.msg+" "+ socket.id);
+      logger.info(
+        "chat " + c.room_id + " " + c.nickname + " " + c.msg + " " + socket.id
+      );
       //socket 방안에 접속해 있는 유저에게 채팅전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) =>
         nicknames.map((nickname) =>
@@ -235,7 +274,7 @@ app.prepare().then(() => {
     //#region disconnect 앱 종료
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
     socket.on("disconnect", () => {
-      logger.info("disc "+ socket.id);
+      logger.info("disc " + socket.id);
       //socet to token
       rc.getNicknameBySocket(socket.id).then((nickname) =>
         chatClose(socket.id, nickname)
@@ -248,7 +287,7 @@ app.prepare().then(() => {
     //#region logout 로그아웃
     socket.on("logout", (c: { nickname: string }) => {
       Logout(c.nickname);
-      logger.info("logu "+ c.nickname+" "+ socket.id);
+      logger.info("logu " + c.nickname + " " + socket.id);
     });
     //#endregion logout 로그아웃
 
@@ -381,12 +420,12 @@ app.prepare().then(() => {
   });
 
   process.on("SIGINT", () => {
-    logger.info('> received SIGNIT signal');
+    logger.info("> received SIGNIT signal");
     isAppGoingToBeClosed = true; // 앱이 종료될 것
 
     // pm2 재시작 신호가 들어오면 서버를 종료시킨다.
     listeningServer.close((err: any) => {
-      logger.warn('server closed')
+      logger.warn("server closed");
       process.exit(err ? 1 : 0);
     });
   });

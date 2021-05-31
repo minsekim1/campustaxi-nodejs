@@ -4,7 +4,7 @@ module.exports = {
       name: "app",
       script: "./node_modules/.bin/ts-node",
       args:"./src/index.ts",
-      instances: 0,
+      instances: 1, //TEST CODE => 0
       exec_mode: "cluster",
       wait_ready: true,
       listen_timeout: 5000000,

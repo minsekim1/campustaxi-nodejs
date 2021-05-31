@@ -1056,6 +1056,11 @@
   "resolved" "https://registry.npmjs.org/@types/flat-cache/-/flat-cache-2.0.0.tgz"
   "version" "2.0.0"
 
+"@types/gapi@^0.0.39":
+  "integrity" "sha512-R1TZeZbvvbIC60DBJMhuOEivQHzOQtzl3uMDOOENTYQTSSDB6oEMpJo8HVPOTWivdUTbyEcB5qQOVr/JCKRlCQ=="
+  "resolved" "https://registry.npmjs.org/@types/gapi/-/gapi-0.0.39.tgz"
+  "version" "0.0.39"
+
 "@types/graphlib@^2":
   "integrity" "sha512-K7T1n6U2HbTYu+SFHlBjz/RH74OA2D/zF1qlzn8uXbvB4uRg7knOM85ugS2bbXI1TXMh7rLqk4OVRwIwEBaixg=="
   "resolved" "https://registry.npmjs.org/@types/graphlib/-/graphlib-2.1.7.tgz"
