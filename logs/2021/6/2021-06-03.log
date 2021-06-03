@@ -114,3 +114,16 @@
 2021/06/03 14:35 info: > received SIGNIT signal
 2021/06/03 14:36 info: > Ready on http://localhost:3000
 2021/06/03 14:36 info: > received SIGNIT signal
+2021/06/03 14:36 info: > Ready on http://localhost:3100
+2021/06/03 14:48 info: > received SIGNIT signal
+2021/06/03 15:15 info: > Ready on http://localhost:3100
+2021/06/03 15:15 info: sent ready signal to PM2 at
+2021/06/03 15:17 info: > received SIGNIT signal
+2021/06/03 15:23 info: > Ready on http://localhost:3100
+2021/06/03 15:23 info: sent ready signal to PM2 at
+2021/06/03 15:23 info: > Ready on http://localhost:3100
+2021/06/03 15:23 info: sent ready signal to PM2 at
+2021/06/03 15:23 info: > Ready on http://localhost:3100
+2021/06/03 15:23 info: sent ready signal to PM2 at
+2021/06/03 15:23 info: > Ready on http://localhost:3100
+2021/06/03 15:23 info: sent ready signal to PM2 at
