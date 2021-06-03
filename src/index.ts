@@ -2,7 +2,7 @@ const express = require("express");
 const next = require("next");
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
-const port = 3100;
+const port = 3000;
 import {} from "./premium/premium";
 import { logger } from "./config/winston";
 
