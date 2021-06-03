@@ -110,3 +110,7 @@
 2021/06/03 10:55 warn: Err chatEnter deleteced undefined or null:nickname/nick/room_id/null
 2021/06/03 10:55 warn: Err chatExit deleteced undefined or null:nickname/undefined/room_id/undefined
 2021/06/03 10:55 warn: Err Logout deleteced undefined or null:nickname/undefined
+2021/06/03 14:33 info: > Ready on http://localhost:3000
+2021/06/03 14:35 info: > received SIGNIT signal
+2021/06/03 14:36 info: > Ready on http://localhost:3000
+2021/06/03 14:36 info: > received SIGNIT signal

@@ -4,12 +4,12 @@ module.exports = {
       name: "app",
       script: "./node_modules/.bin/ts-node",
       args:"./src/index.ts",
-      instances: 1, //TEST CODE => 0
+      instances: 0,
       exec_mode: "cluster",
       wait_ready: true,
-      listen_timeout: 5000000,
-      kill_timeout: 50000,
-      max_memory_restart: "2000G",
+      listen_timeout: 10000,
+      kill_timeout: 5000,
+      max_memory_restart: "3G",
       env: {
         NODE_ENV: "development",
       },

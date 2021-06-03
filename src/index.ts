@@ -2,7 +2,7 @@ const express = require("express");
 const next = require("next");
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
-const port = 3000;
+const port = 3100;
 import {} from "./premium/premium";
 import { logger } from "./config/winston";
 
@@ -430,6 +430,6 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(3000);
+  httpServer.listen(port);
 });
 //#endregion pm2 설정

@@ -1,6 +1,3 @@
-import { strOrNull } from "../../types/basic";
-import { logger } from "../winston";
-
 const redis = require("redis");
 const rc = redis.createClient({ expire: 3600 });
 
@@ -66,62 +63,26 @@ const rc = redis.createClient({ expire: 3600 });
 
 //7-1 getLengthInRoomUsers
 // getLengthInRoomUsers(room_id).then(length=>{})
-//#region 키 유효 설정 7일
+//#region 키 유효 설정 3일
 const ex = (key: string) => {
-  let todayEnd = new Date().setDate(new Date().getDate() + 7);
+  let todayEnd = new Date().setDate(new Date().getDate() + 3);
   rc.expireat(key, String(Math.round(todayEnd / 1000)));
 };
-//#endregion 키 유효 설정 7일
-
-//#region null | undefined 체크
-
-//함수 실행할때 매개변수 갯수와 함수가 널값인지 체크하고 문제가 있을시 로그로 띄우는 함수
-// if (isValueF(getNicknameBySocket, 'null')) {
-//   getNicknameBySocket('null').then((name) => console.log("name", name))
-// }
-// export const isValueF = (func: Function, ...args: string[]
-// ) => {
-//   try {
-//     if (func.length != args.length)
-//       logger.warn('Err:' + func.name + ' func length ')
-//     else {
-//       for (let i = 0; i < args.length; i++)
-//         if (args[i] == null && args[i] == undefined) {
-//           logger.warn('Err:' + func.name + ' value' + '/args/' + args[i], i)
-//           return false;
-//         } else if (i == args.length - 1) {
-//           if (func.length == 0)
-//             func()
-//           else if (func.length == 1)
-//             func(args[0])
-//           else if (func.length == 2)
-//             func(args[0], args[1])
-//           else if (func.length == 3)
-//             func(args[0], args[1], args[2])
-//           return true;
-//         }
-//     }
-//   } catch (e: any) {
-//     logger.warn('Err:' + func.name + ' func' + '/msg/' + e)
-//     return false;
-//   }
-
-// }
-//#endregion
+//#endregion 키 유효 설정 3일
 
 //#region 1 @soc socket_id => nickname
 export const setSocket = (socket_id: string, nickname: string) => {
   rc.set("@soc" + socket_id, nickname);
   ex("@soc" + socket_id);
-}
-export const getNicknameBySocket = (socket_id: string): Promise<string> => {
+};
+export const getNicknameBySocket = (socket_id: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.get("@soc" + socket_id, (e: any, reply: string) => resolve(reply));
   });
-}; //return : false | string(nickname)
+}; //return : null | string(nickname)
 
 export const removeSocket = (socket_id: string) => {
-  rc.del("@soc" + socket_id)
+  rc.del("@soc" + socket_id);
 };
 export const isSocket = (socket_id: string) =>
   new Promise((resolve: any) =>
@@ -134,7 +95,7 @@ export const setToken = (token_id: string, nickname: string) => {
   rc.set("@tok" + token_id, nickname);
   ex("@tok" + token_id);
 };
-export const getNicknameByToken = (token_id: string): Promise<string> => {
+export const getNicknameByToken = (token_id: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.get("@tok" + token_id, (e: any, reply: string) => resolve(reply));
   });
@@ -154,7 +115,7 @@ export const addNicknameInRoomToken = (room_id: string, nickname: string) => {
   rc.sadd("@roomTok" + room_id, nickname);
   ex("@roomTok" + room_id);
 };
-export const getNicknamesInRoomToken = (room_id: string): Promise<string[]> => {
+export const getNicknamesInRoomToken = (room_id: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
     rc.smembers("@roomTok" + room_id, (e: any, reply: string[]) =>
       resolve(reply)
@@ -181,7 +142,7 @@ export const addNicknameInRoomSocket = (room_id: string, nickname: string) => {
   rc.sadd("@roomSoc" + room_id, nickname);
   ex("@roomSoc" + room_id);
 };
-export const getNicknamesInRoomSocket = (room_id: string): Promise<string[]> => {
+export const getNicknamesInRoomSocket = (room_id: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
     rc.smembers("@roomSoc" + room_id, (e: any, reply: string[]) =>
       resolve(reply)
@@ -217,30 +178,30 @@ export const setUser = (nickname: string, socId: string, tokId: string) => {
   ex("@usr" + nickname);
 };
 type usr = {
-  socId: string;
-  tokId: string;
-  enterDate: Date;
+	socId: string;
+	tokId: string;
+	enterDate: Date;
 }
-export const getUserAll = (nickname: string): Promise<usr> => {
+export const getUserAll = (nickname: string):Promise<usr> => {
   return new Promise((resolve: any) => {
     rc.hgetall("@usr" + nickname, (e: any, reply: string) => resolve(reply));
   });
 };
-export const getUserSocId = (nickname: string): Promise<string> => {
+export const getUserSocId = (nickname: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.hget("@usr" + nickname, "socId", (e: any, reply: string) =>
       resolve(reply)
     );
   });
 };
-export const getUserTokId = (nickname: string): Promise<string> => {
+export const getUserTokId = (nickname: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.hget("@usr" + nickname, "tokId", (e: any, reply: string) =>
       resolve(reply)
     );
   });
 };
-export const getUserEnterDate = (nickname: string): Promise<string> => {
+export const getUserEnterDate = (nickname: string):Promise<string> => {
   return new Promise((resolve: any) => {
     rc.hget("@usr" + nickname, "enterDate", (e: any, reply: string) =>
       resolve(reply)
@@ -262,7 +223,7 @@ export const addRoomidInUser = (nickname: string, room_id: string) => {
   rc.sadd("@usrRoom" + nickname, room_id);
   ex("@usrRoom" + room_id);
 };
-export const getRoomidsInUser = (nickname: string): Promise<string[]> => {
+export const getRoomidsInUser = (nickname: string):Promise<string[]> => {
   return new Promise((resolve: any) => {
     rc.smembers("@usrRoom" + nickname, (e: any, reply: string[]) =>
       resolve(reply)
@@ -282,11 +243,11 @@ export const AllKeysDelete = () => {
 //#endregion User
 
 //#region 7 getLengthInRoomUsers(room_id).then(length=>{})
-export const getLengthInRoomUsers = (room_id: any): Promise<number> =>
-  new Promise(async (resolve: any) => {
+export const getLengthInRoomUsers = (room_id: any):Promise<number> =>
+  new Promise(async(resolve: any) => {
     let arr1 = await getNicknamesInRoomSocket(room_id)
     let arr2 = await getNicknamesInRoomToken(room_id)
-    resolve(arr1.length + arr2.length)
+    resolve(arr1.length+arr2.length)
   }
     // rc.exists("@usr" + nickname, (e: any, reply: string) => resolve(reply))
   );

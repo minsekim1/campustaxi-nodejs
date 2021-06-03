@@ -1,16 +1,18 @@
 import {
   AllKeysDelete,
-  getNicknameBySocket,
   getNicknamesInRoomSocket,
   getNicknamesInRoomToken,
-  removeSocket,
-  setSocket,
 } from "./redis";
 // import * as rc from "./redis";
 
 import { database } from "firebase-admin";
 import {
-  appEnter, chatClose, chatEnter, chatExit, Logout,
+  appEnter,
+  Logout,
+  chatExit,
+  chatEnter,
+  chatClose,
+  chatCloseAll,
 } from "../../types/socket";
 import { getUserAll } from "./redis";
 
@@ -152,7 +154,7 @@ export function arraysEqual(a: Array<string>, b: Array<string>) {
 // getNicknamesInRoomToken("77").then((nicknames) => console.log("7", nicknames));
 
 
-// 1초 뒤 종료
-setTimeout(function () {
-  return process.exit(22);
-}, 100);
+//1초 뒤 종료
+// setTimeout(function () {
+//   return process.exit(22);
+// }, 100);
