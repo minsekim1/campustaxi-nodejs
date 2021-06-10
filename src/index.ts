@@ -374,6 +374,6 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(3000);
+  httpServer.listen(port);
 });
 //#endregion pm2 설정
