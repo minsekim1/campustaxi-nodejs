@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "campustaxi-b0e6c",
+  "private_key_id": "b56a19956ad8ba62cfa3f2aa82791d2339218730",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCm+xUtNhUQXU4a\n+rVlzwzGauRa6SV1IGShS8tYnoLEQK3J2KFsjEa7ej4KiH+vF2F9Zcq5PRCCVAAh\nm+WJtYzfaTO96BZIwachUvcvZAErIpMrUaY/VK1a5Y90M2LfVZIS4Ye/DlXuFqP0\nQnOF+NbbD11AHe2JgBZyln0JvRMUya+0Nyoe00eDhtsQxKej4ilQz1Y5RHo1KZ1E\nM5ghW8say6gX6qM7Z/fLpKH0btWMhvEisFt7YuzP38xdhiyRuFHvshtfvRrrmUA9\nGomSRG/mfMcZFJzGiC49qFcPw0m8mImVnvLsoBIHv3gtBcZGeomF1JSt3UZxy805\ny2eT9T7zAgMBAAECggEAIqTDLv8ifaOuGcDcM8QyVVRGDmqCv/s5hZFxHfC9FrSI\nmfEdBKVR44GoL41EWHJUYqzk02vM6g09fbuXcuu8z3lHJ+ZoAS5UW4CYEjgAWg+x\nUvJ8uHT8BnjMO4KRx948ETjDbisuPthpqbrDtw76nLZiVXQgHT/66Ek6pfOZat1a\n48okUPIOpVt9hGBDjBsQ5jZUnu45sOcfW49UW5LJQrFXcTtiTvYo04Sx+lBmqmca\nfkj4ONFOPq6AOTR+P1lqO2wIfZpSTdmiyhzc0eyIJLNIjtHgGJCdYZ23cEr5/zyz\nDHd+0FNrq08JuWbgTHhjRJ0fiAhw7pf6ld3kALUeoQKBgQDqaZ4gjZEosdT8u8Iv\nbMoU2fKBTDiM0B1dp0iy3Q9r7mvIefwDPKpKLd3KKocCFYCiXvaqMGYgIILVoFTa\n2DGMRz3gL4vfnKH4tIJFVMGGZJshytlM7/4UQbR19IzBLa6hP9SFGt2RGhDbuUz5\nWxogdxNSHXutBObsamuT80suQwKBgQC2W7r7UC7Kw7jbHXQKJEE8tnB7SE6o5a6d\nD4vfshRwFyT1ilX1v6jNYnqBk5lyX9CAB38NuNZLtzNDJbXgXb9ziOTSiDJJq7ZU\nqURybbjyQgKIZzU2mcTmv+2b0fv+IhObAbcDKfaLHoug8Y4HlHlTB3rl8psUtVg7\nZJf0Vr6ZkQKBgQCDAPfAVZ20Un4nqH8DphbhxFQE8qX//CcNOfolC+ocdaiC57lx\nzauVvUBgRZgiEAZNuCi+QEIy3jiATxRdIcm/DemEqs3O8GiM58SOHqnxA7S3E/iR\nSOaER5wk98DaDT+1GkkZAkSlXR3izhI4oTNexW1kzNlbfovXwDnS+3sepQKBgA+j\nRiGO+rRAnHWNzQmhmkaOjo7D4JrzN0oYrzH7n20NTwoPVtfAG8WhEEhUU/BO7x5L\nhkWy+A1+JFM5xKL85xINRzIWo9lVdElGSqxVZGrB5l20HAgWn5/6DXIzS5y7Z1r/\nhqYqzw2XDPo8PKXBwbWxCoT1jP71nh9ZvP4jAi1BAoGABdEPzGajsNZgPaQREKT8\nFCZ91sT1pdP3GB4Zhv+D6AHQKglb9Myxx0YjVKQz7qXXra2h9PVptqJPuFJs+JBd\nps1L0ljleqcE4sswYor4XuxVxIq4TZaBDYDM3jsfWLT48Nm/vibgErpt2F9QUpvJ\nShlPW5cv15boYxD43Bd1+MQ=\n-----END PRIVATE KEY-----\n",
+  "client_email": "campustaxi-b0e6c@appspot.gserviceaccount.com",
+  "client_id": "105977826183973355439",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/campustaxi-b0e6c%40appspot.gserviceaccount.com"
+}

@@ -60,63 +60,7 @@ app.prepare().then(() => {
         res.writeHead(200, { "Content-Type": "text/html" });
         res.end(data);
       });
-    } else if (path == "/googleiab/token/request") {
-      //#region 구글 정기결제 확인 api
-      const CLIENT_ID =
-        "1054249413075-50k4d1kiibquaus5thlgtkqt2me6g1a5.apps.googleusercontent.com";
-      const AUTHORIZE_URI = "https://accounts.google.com/o/oauth2/v2/auth";
-      const { google } = require("googleapis");
-      const OAuth2 = google.auth.OAuth2;
-      const TOKEN_PATH = "./config/googletoken.json";
-      //구글 API 중 접근해야할 곳을 다수로 요청할 수 있다.
-      const scopes = ["https://www.googleapis.com/auth/androidpublisher"];
-
-      let oauth2Client = new OAuth2(client_id, client_secret, redirect_uri);
-      let url = oauth2Client.generateAuthUrl({
-        access_type: "offline", // 'online'이 기본인데 refresh_token을 얻으러면 'offline'으로 입력
-        scope: scopes, // string으로된 Array 형태의 scope
-        approval_prompt: "force",
-      });
-      logger.info("url", url);
-      // res.redirect(url);
-      //#endregion 구글 정기결제 확인 api
-    } else if (path == "/googleiab/token/redirect") {
-      let tokenStorage = {
-        access_token: null,
-        token_type: null,
-        expires_in: null,
-        refresh_token: null,
-      };
-      if (req.query.code === null || req.query.code === undefined) {
-        res.send(tokenStorage);
-        return;
-      }
-
-      //authorization code를 포함하면 access token과 교환할 수 있도록 한다.
-      let url = "https://www.googleapis.com/oauth2/v4/token";
-      let payload = {
-        grant_type: "authorization_code", //OAuth 2.0 스펙에 포함된 필드로 반드시 'authorization_code'로 입력한다.
-        code: req.query.code, //토큰 요청을 통해서 얻은 코드
-        client_id: client_id,
-        client_secret: client_secret,
-        redirect_uri: redirect_uri,
-      };
-
-      request.post(
-        url,
-        { form: payload },
-        function (error: any, response: any, body: any) {
-          let parseBody = JSON.parse(body);
-          tokenStorage.access_token = parseBody.access_token;
-          tokenStorage.token_type = parseBody.token_type;
-          tokenStorage.expires_in = parseBody.expires_in;
-          tokenStorage.refresh_token = parseBody.refresh_token;
-          //TODO : refresh_token으로 1시간이 되기 전에 access token으로 교환되도록 한다.
-
-          res.send(tokenStorage);
-        }
-      );
-    }
+    } 
     //#endregion 라우팅 설정: 페이지를 구분합니다.
   });
   const io = require("socket.io")(httpServer);
