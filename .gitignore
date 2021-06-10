@@ -3,3 +3,4 @@ firebaseConfig.json
 secrets_nodejs.json
 serverKey.json
 .next
+logs
