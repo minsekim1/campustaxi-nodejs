@@ -46,13 +46,6 @@ app.prepare().then(() => {
     const url = require("url");
     const fs = require("fs");
     let path = url.parse(req.url).pathname;
-    const client_id =
-      "1054249413075-50k4d1kiibquaus5thlgtkqt2me6g1a5.apps.googleusercontent.com";
-    const client_secret = "DN63ztA6GtAP8bK_epO4kVt-";
-    const redirect_uri =
-      "https://726c9e683d2c.ngrok.io/googleiab/token/redirect"; //google api로 https로 설정
-    const request = require("request");
-
     //#region 라우팅 설정: 페이지를 구분합니다.
     if (path == "/") {
       // index.html로 응답합니다.
