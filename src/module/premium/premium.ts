@@ -1,3 +1,5 @@
+import { dbconn } from "../../config/mysql/database";
+
 const sql_select =
   "SELECT u.imagepath as imagepath\
   FROM campustaxi_db.users_tb as u\
@@ -28,17 +30,13 @@ app.use(function(req: any, res: any, next: any) {
     next();
 });
 
-var db_config = require("../config/mysql/database.js");
-var db_conn = db_config.init();
-db_config.connect(db_conn);
-
 //#region SELECT MESSAGE
 export const sql_message_select = async (
-    db_conn: any,
+    dbconn: any,
     id: string 
   ): Promise<string> => {
     return new Promise(async (resolve) => {
-      db_conn.query(sql_select, id, (err: any, results: any) => {
+      dbconn.query(sql_select, id, (err: any, results: any) => {
         if (err) {
           console.error("error connecting: " + err.stack);
           resolve(err);
@@ -49,12 +47,12 @@ export const sql_message_select = async (
   };
 
 export const sql_message_update = async (
-    db_conn: any,
+    dbconn: any,
     email: string,
     profile_path: string,
 ): Promise<string> => {
     return new Promise(async (resolve) => {
-        db_conn.query(sql_update, [profile_path, email], (err: any, results: any) => {
+        dbconn.query(sql_update, [profile_path, email], (err: any, results: any) => {
             if (err) {
                 console.error("error connecting: " + err.stack);
                 resolve(err);
@@ -79,7 +77,7 @@ app.post('/getProfileIcon', async function(req: any, res: any){
 
     let email = req.body.email
 
-    var resultItems = await sql_message_select(db_conn, email);
+    var resultItems = await sql_message_select(dbconn, email);
     res.send(resultItems);
 
 });
@@ -89,7 +87,7 @@ app.post('/updateProfileIcon', async function(req: any, res: any){
     let email = req.body.email;
     let imagepath = req.body.imagepath;
 
-    var resultItems = await sql_message_update(db_conn, email, imagepath);
+    var resultItems = await sql_message_update(dbconn, email, imagepath);
     res.send(resultItems);
 
 });

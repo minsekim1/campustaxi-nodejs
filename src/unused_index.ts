@@ -1,25 +1,71 @@
-import { arraysEqual } from "../../config/redis/redis_test";
-import { logger as l } from "../../config/winston";
-import { sql_room_get, ChatRoom, sql_room_get_map } from "../../types/ChatRoom";
-import { sql_message_insert } from "../../types/Message";
-import { send } from "../../config/firebase/firebase";
-import {
-  chatEnter,
-  chatClose,
-  chatExit,
-  appEnter,
-  Logout,
-} from "../../types/socket";
-import { sql_userid_get, sql_usernicknames } from "../../types/User";
-import { sql_message_select } from "../premium/premium";
-import * as rc from "../../config/redis/redis";
+const express = require("express");
+const next = require("next");
+const dev = process.env.NODE_ENV !== "production";
+const app = next({ dev });
+const port = 3000;
+import {} from "./premium/premium";
+import { logger } from "./config/winston";
 
-export const socket = (io: any, db_conn: any) => {
+import { send } from "./config/firebase/firebase";
+import * as rc from "./config/redis/redis";
+import { arraysEqual, l } from "./config/redis/redis_test";
+import {
+  Message,
+  sql_message_insert,
+  sql_message_select,
+} from "./types/Message";
+import * as soc from "./types/socket";
+import {
+  appEnter,
+  chatClose,
+  chatEnter,
+  chatExit,
+  Logout,
+} from "./types/socket";
+import { sql_userid_get, sql_usernicknames, User } from "./types/User";
+import { ChatRoom, sql_room_get, sql_room_get_map } from "./types/ChatRoom";
+
+//#region     서버 배포 설정
+app.prepare().then(() => {
+  const server = express();
+  let isAppGoingToBeClosed = false; // SIGINT 시그널을 받았는지 여부. 앱이 곧 종료될 것임을 의미한다.
+  server.use((req: any, res: any, next: any) => {
+    // 프로세스 종료 예정이라면 리퀘스트를 처리하지 않는다
+    if (isAppGoingToBeClosed) {
+      res.set("Connection", "close");
+    }
+    next();
+  });
+
+  var db_config = require("./config/mysql/database.js");
+  var db_conn = db_config.init();
+  db_config.connect(db_conn);
+
+  const httpServer = require("http").createServer((req: any, res: any) => {
+    // URL을 받아올 변수를 선언합니다.
+    const url = require("url");
+    const fs = require("fs");
+    let path = url.parse(req.url).pathname;
+    //#region 라우팅 설정: 페이지를 구분합니다.
+    if (path == "/") {
+      // index.html로 응답합니다.
+      fs.readFile("./src/index/index.html", (err: any, data: any) => {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.end(data);
+      });
+    } 
+    //#endregion 라우팅 설정: 페이지를 구분합니다.
+  });
+  const io = require("socket.io")(httpServer);
+
+  //#endregion  서버 배포 설정
+
+  //#region 웹소켓 설정
   io.on("connection", (socket: any) => {
     //#region chatEnter 채팅방 접속
     // data : c.room_id c.nickname
     socket.on("chatEnter", (c: any) => {
-      l.info("cE " + c.room_id + " " + c.nickname + " " + socket.id);
+      logger.info("cE " + c.room_id + " " + c.nickname + " " + socket.id);
       chatEnter(c.nickname, c.room_id);
       // 채팅방 채팅 "들어갔음" 소켓 전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) => {
@@ -46,14 +92,14 @@ export const socket = (io: any, db_conn: any) => {
     //#region chatClose 채팅방 닫기 (fcm활성화)
     // data : c.room_id c.nickname
     socket.on("chatClose", (c: any) => {
-      l.info("cC " + c.room_id + " " + c.nickname + " " + socket.id);
+      logger.info("cC " + c.room_id + " " + c.nickname + " " + socket.id);
       chatClose(c.nickname, c.room_id);
     });
     //#endregion chatClose 채팅방 나가기
 
     //#region chatExit 채팅방 나가기
     socket.on("chatExit", (c: any) => {
-      l.info("cE " + c.room_id + " " + c.nickname);
+      logger.info("cE " + c.room_id + " " + c.nickname);
       chatExit(c.nickname, c.room_id);
     });
     //#endregion chatExit 채팅방 나가기
@@ -61,12 +107,13 @@ export const socket = (io: any, db_conn: any) => {
     socket.on("chatRooms", (c: { nickname: string }) => {
       rc.getRoomidsInUser(c.nickname).then((roomids) => {
         //#region Get ROOM
+
         if (!arraysEqual(roomids, [])) {
           db_conn.query(
             sql_room_get(roomids),
             (err: any, chatRooms: ChatRoom[]) => {
               if (err) {
-                l.error("error connecting: " + err.stack);
+                logger.error("error connecting: " + err.stack);
                 return;
               }
               //현재인원 추가하기
@@ -95,7 +142,7 @@ export const socket = (io: any, db_conn: any) => {
     //#region appEnter 앱 접속
     // data :  nickname  token
     socket.on("appEnter", (c: any) => {
-      l.info("aE " + c.nickname + " " + socket.id);
+      logger.info("aE " + c.nickname + " " + socket.id);
       appEnter(c.nickname, socket.id, c.token);
     });
     //#endregion appEnter 앱 접속
@@ -110,7 +157,7 @@ export const socket = (io: any, db_conn: any) => {
     socket.on("chat", (c: ChatProps) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
       //c.room_id
-      l.info(
+      logger.info(
         "chat " + c.room_id + " " + c.nickname + " " + c.msg + " " + socket.id
       );
       //socket 방안에 접속해 있는 유저에게 채팅전송
@@ -164,7 +211,7 @@ export const socket = (io: any, db_conn: any) => {
     //#region disconnect 앱 종료
     // 사용자 어플에서 종료, 많은 소켓 disconnect가 한번에 들어옴.
     socket.on("disconnect", () => {
-      l.info("disc " + socket.id);
+      logger.info("disc " + socket.id);
       //socet to token
       rc.getNicknameBySocket(socket.id).then((nickname) =>
         chatClose(socket.id, nickname)
@@ -177,7 +224,7 @@ export const socket = (io: any, db_conn: any) => {
     //#region logout 로그아웃
     socket.on("logout", (c: { nickname: string }) => {
       Logout(c.nickname);
-      l.info("logu " + c.nickname + " " + socket.id);
+      logger.info("logu " + c.nickname + " " + socket.id);
     });
     //#endregion logout 로그아웃
 
@@ -205,7 +252,7 @@ export const socket = (io: any, db_conn: any) => {
           ],
           (err: any, chatRooms: ChatRoom[]) => {
             if (err) {
-              l.error("error connecting: " + err.stack);
+              logger.error("error connecting: " + err.stack);
               return;
             }
             //현재인원 추가하기
@@ -235,7 +282,7 @@ export const socket = (io: any, db_conn: any) => {
         sql_usernicknames(nicknames),
         (err: any, chatUsers: any) => {
           if (err) {
-            l.error("error connecting: " + err.stack);
+            logger.error("error connecting: " + err.stack);
             return;
           }
           io.to(socket.id).emit("chatRoomsInUsers", {
@@ -278,7 +325,7 @@ export const socket = (io: any, db_conn: any) => {
           sql_usernicknames(nicknames),
           (err: any, chatUsers: any) => {
             if (err) {
-              l.error("error connecting: " + err.stack);
+              logger.error("error connecting: " + err.stack);
               return;
             }
             nicknames.map((nickname) =>
@@ -294,4 +341,32 @@ export const socket = (io: any, db_conn: any) => {
     );
     //#endregion 강퇴하기
   });
-};
+  //#endregion 웹소켓 설정
+
+  //#region pm2 설정
+
+  const listeningServer = server.listen((err: any) => {
+    if (err) throw err;
+    logger.info(`> Ready on http://localhost:${port}`);
+
+    // PM2에게 앱 구동이 완료되었음을 전달한다
+    if (process.send) {
+      process.send("ready");
+      logger.info("sent ready signal to PM2 at", new Date());
+    }
+  });
+
+  process.on("SIGINT", () => {
+    logger.info("> received SIGNIT signal");
+    isAppGoingToBeClosed = true; // 앱이 종료될 것
+
+    // pm2 재시작 신호가 들어오면 서버를 종료시킨다.
+    listeningServer.close((err: any) => {
+      logger.warn("server closed");
+      process.exit(err ? 1 : 0);
+    });
+  });
+
+  httpServer.listen(port);
+});
+//#endregion pm2 설정
