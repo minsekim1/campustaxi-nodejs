@@ -10,15 +10,104 @@ const sql_update =
     SET u.imagepath = (?)\
     where u.email = (?)"
 
+const sql_theme_select =
+    "SELECT t.*\
+    FROM campustaxi_db.rooms_tb as r\
+    NATURAL JOIN theme_tb as t\
+    WHERE r.id = (?)"
+
 const express = require("express");
 const app = express();
 const next = require("next");
 const cors = require("cors");
-
-
+const fs = require('fs');
 app.use(cors());
 var bodyParser = require('body-parser')
-app.use(bodyParser.json())
+app.use(bodyParser.json({ limit: "100mb" }))
+app.use(express.json({ limit: "100mb" }));
+
+
+
+const key = JSON.parse(
+  fs.readFileSync("./src/config/awsS3/secrets_aws.json")
+);
+
+
+// Configure AWS with your access and secret key.
+const ACCESS_KEY_ID = key.ACCESS_KEY_ID;
+const SECRET_ACCESS_KEY = key.SECRET_ACCESS_KEY;
+const AWS_REGION = key.AWS_REGION;
+const S3_BUCKET = key.S3_BUCKET;
+    
+/**
+ * This gist was inspired from https://gist.github.com/homam/8646090 which I wanted to work when uploading an image from
+ * a base64 string.
+ * Updated to use Promise (bluebird)
+ * Web: https://mayneweb.com
+ *
+ * @param  {string}  base64 Data
+ * @return {string}  Image url
+ */
+const imageUpload = async (base64: any) => {
+  
+  // You can either "yarn add aws-sdk" or "npm i aws-sdk"
+  const AWS = require('aws-sdk');
+
+  // Configure AWS to use promise
+  AWS.config.setPromisesDependency(require('bluebird'));
+  AWS.config.update({ accessKeyId: ACCESS_KEY_ID, secretAccessKey: SECRET_ACCESS_KEY, region: AWS_REGION });
+
+  // Create an s3 instance
+  const s3 = new AWS.S3();
+
+  // Ensure that you POST a base64 data to your server.
+  // Let's assume the variable "base64" is one.
+  const base64Data = new (Buffer as any).from(base64.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+
+  // Getting the file type, ie: jpeg, png or gif
+  const type = "png";
+
+  // Generally we'd have an userId associated with the image
+  // For this example, we'll simulate one
+  let nowtime = new Date();  
+  const fileName = nowtime.toLocaleDateString("en-KR")+"_"+nowtime.toLocaleTimeString('en-KR', { hour12: false });
+
+
+  // With this setup, each time your user uploads an image, will be overwritten.
+  // To prevent this, use a different Key each time.
+  // This won't be needed if they're uploading their avatar, hence the filename, userAvatar.js.
+  const params = {
+    Bucket: S3_BUCKET,
+    Key: `chatphoto/${fileName}.${type}`, // type is not required
+    Body: base64Data,
+    ACL: 'public-read',
+    ContentEncoding: 'base64', // required
+    ContentType: `image/${type}` // required. Notice the back ticks
+  }
+
+
+  // The upload() is used instead of putObject() as we'd need the location url and assign that to our user profile/database
+  // see: http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
+  let location = '';
+  let key = '';
+  try {
+    const { Location, Key } = await s3.upload(params).promise();
+    location = Location;
+    key = Key;
+  } catch (error) {
+     console.log(error)
+  }
+  
+  // Save the Location (url) to your database and Key if needs be.
+  // As good developers, we should return the url and let other function do the saving to database etc
+  console.log(location, key);
+  
+  return location;
+  
+  // To delete, see: https://gist.github.com/SylarRuby/b3b1430ca633bc5ffec29bbcdac2bd52
+}
+
+
 app.use(function(req: any, res: any, next: any) {
     
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,8 +120,8 @@ app.use(function(req: any, res: any, next: any) {
 });
 
 //#region SELECT MESSAGE
-export const sql_message_select = async (
-    dbconn: any,
+export const sql_profile_select = async (
+    db_conn: any,
     id: string 
   ): Promise<string> => {
     return new Promise(async (resolve) => {
@@ -46,8 +135,8 @@ export const sql_message_select = async (
     });
   };
 
-export const sql_message_update = async (
-    dbconn: any,
+export const sql_profile_update = async (
+    db_conn: any,
     email: string,
     profile_path: string,
 ): Promise<string> => {
@@ -62,6 +151,48 @@ export const sql_message_update = async (
     });
 };
 
+export const sql_theme_get = async (
+    db_conn: any,
+    room_id: string,
+): Promise<string> => {
+    return new Promise(async (resolve) => {
+        db_conn.query(sql_theme_select, [room_id], (err: any, results: any) => {
+            if (err) {
+                console.error("error connecting: " + err.stack);
+                resolve(err);
+            }
+            resolve(results);
+        });
+    });
+};
+
+app.post('/getProfileIcon', async function(req: any, res: any){
+    
+    let email = req.body.email;
+
+    var resultItems = await sql_profile_select(dbconn, email);
+    res.send(resultItems);
+
+});
+
+app.post('/updateProfileIcon', async function(req: any, res: any){
+
+    let email = req.body.email;
+    let imagepath = req.body.imagepath;
+
+    var resultItems = await sql_profile_update(dbconn, email, imagepath);
+    res.send(resultItems);
+
+});
+
+app.post('/uploadPhoto', async function (req: any, res: any) {
+
+    console.log(req);
+    res.send(await imageUpload(req.body.imageBase64));
+    res.status(200);
+});
+
+
 app.get('/', function(req: any, res: any){
     res.send("welcome!");
 });
@@ -73,27 +204,10 @@ app.post('/api', function(req: any, res: any, next: any){
   
 });
   
-app.post('/getProfileIcon', async function(req: any, res: any){
-
-    let email = req.body.email
-
-    var resultItems = await sql_message_select(dbconn, email);
-    res.send(resultItems);
-
-});
-
-app.post('/updateProfileIcon', async function(req: any, res: any){
-
-    let email = req.body.email;
-    let imagepath = req.body.imagepath;
-
-    var resultItems = await sql_message_update(dbconn, email, imagepath);
-    res.send(resultItems);
-
-});
 
 app.listen(3003, function(){
     console.log("connected 3003 port : premium")
 })
+
 
 export default app;

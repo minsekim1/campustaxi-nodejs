@@ -1,7 +1,7 @@
 import { arraysEqual } from "../../config/redis/redis_test";
 import { logger as l } from "../../config/winston";
 import { sql_room_get, ChatRoom, sql_room_get_map } from "../../types/ChatRoom";
-import { sql_message_insert } from "../../types/Message";
+import { sql_message_insert, sql_message_select } from "../../types/Message";
 import { send } from "../../config/firebase/firebase";
 import {
   chatEnter,
@@ -11,7 +11,6 @@ import {
   Logout,
 } from "../../types/socket";
 import { sql_userid_get, sql_usernicknames } from "../../types/User";
-import { sql_message_select } from "../premium/premium";
 import * as rc from "../../config/redis/redis";
 
 export const socket = (io: any, db_conn: any) => {
@@ -34,7 +33,7 @@ export const socket = (io: any, db_conn: any) => {
       });
       //접속한 사용자에게 이전 메세지 전달
       //#region SELECT MESSAGE
-      sql_message_select(db_conn, c.room_id).then((r) => {
+      sql_message_select(db_conn, c.room_id).then((r:any) => {
         io.to(socket.id).emit("chatEnter chat", {
           data: r,
         });
@@ -101,17 +100,18 @@ export const socket = (io: any, db_conn: any) => {
     //#endregion appEnter 앱 접속
 
     //#region chat 사용자 채팅 전송
-    type ChatProps = {
+        type ChatProps = {
       room_id: string;
       nickname: string;
       msg: string;
+      msg_type: string;
       firebaseToken: string;
     };
     socket.on("chat", (c: ChatProps) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
       //c.room_id
       l.info(
-        "chat " + c.room_id + " " + c.nickname + " " + c.msg + " " + socket.id
+         "chat " + c.room_id + " " + c.nickname + " " + c.msg + " " + c.msg_type + " " + socket.id 
       );
       //socket 방안에 접속해 있는 유저에게 채팅전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) =>
@@ -121,6 +121,7 @@ export const socket = (io: any, db_conn: any) => {
               nickname: c.nickname,
               chatTime: new Date(),
               msg: c.msg,
+                   msg_type: c.msg_type,
             })
           )
         )
@@ -133,7 +134,7 @@ export const socket = (io: any, db_conn: any) => {
             send({
               clientToken: tokid,
               title: c.nickname,
-              mesage: c.msg,
+              mesage: c.msg_type === "NORMAL" ? c.msg : "(IMAGE)",
               // click_action: "string",
               // icon: ""
             })
@@ -150,6 +151,7 @@ export const socket = (io: any, db_conn: any) => {
           sql_message_insert(
             db_conn,
             c.msg,
+              c.msg_type,
             user_id,
             Number(c.room_id),
             user_id
