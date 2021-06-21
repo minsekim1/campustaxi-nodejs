@@ -4,6 +4,7 @@ import {  Message } from "./config/mysql/mysql-model/model";
 const app = express();
 const port = 3000;
 import { logger as l } from "./config/winston";
+import { premium_app } from "./module/premium/premium";
 import { socket } from "./module/socket/socket";
 import { sql_message_select } from "./types/Message";
 
@@ -23,7 +24,8 @@ const server = app.listen(port, () => {
 
   //#region Socket APIs
   const io = require("socket.io")(server);
-  socket(io,dbconn)
+  socket(io, dbconn)
+  premium_app(app);
   //#endregion Socket APIs
 });
 
