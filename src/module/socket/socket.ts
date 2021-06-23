@@ -1,3 +1,4 @@
+import { dbconn } from "./../../config/mysql/database";
 import { arraysEqual } from "../../config/redis/redis_test";
 import { logger as l } from "../../config/winston";
 import { sql_room_get, ChatRoom, sql_room_get_map } from "../../types/ChatRoom";
@@ -12,9 +13,27 @@ import {
 } from "../../types/socket";
 import { sql_userid_get, sql_usernicknames } from "../../types/User";
 import * as rc from "../../config/redis/redis";
+import { sql_host_set } from "../chat/passhost";
 
 export const socket = (io: any, db_conn: any) => {
   io.on("connection", (socket: any) => {
+    //#region 방장위임
+    socket.on("chatPassHost", (c: any) => {
+      //taker_id: 방장 받는사람 고유번호
+      l.info(
+        "cPassHost " +
+          c.room_id +
+          " " +
+          c.taker_id +
+          " " +
+          socket.id +
+          " " +
+          c.host_id
+      );
+      if (!c.room_id || !c.taker_id || !socket.id || !c.host_id) return;
+      else sql_host_set(db_conn, c.room_id, c.taker_id, c.host_id);
+    });
+    //#endregion
     //#region chatEnter 채팅방 접속
     // data : c.room_id c.nickname
     socket.on("chatEnter", (c: any) => {
@@ -33,7 +52,7 @@ export const socket = (io: any, db_conn: any) => {
       });
       //접속한 사용자에게 이전 메세지 전달
       //#region SELECT MESSAGE
-      sql_message_select(db_conn, c.room_id).then((r:any) => {
+      sql_message_select(db_conn, c.room_id).then((r: any) => {
         io.to(socket.id).emit("chatEnter chat", {
           data: r,
         });
@@ -58,36 +77,41 @@ export const socket = (io: any, db_conn: any) => {
     //#endregion chatExit 채팅방 나가기
     //#region 유저 방 목록 가져오기
     socket.on("chatRooms", (c: { nickname: string }) => {
-      rc.getRoomidsInUser(c.nickname).then((roomids) => {
-        //#region Get ROOM
-        if (!arraysEqual(roomids, [])) {
-          db_conn.query(
-            sql_room_get(roomids),
-            (err: any, chatRooms: ChatRoom[]) => {
-              if (err) {
-                l.error("error connecting: " + err.stack);
-                return;
-              }
-              //현재인원 추가하기
-              let maxlength = chatRooms.length - 1;
-              let chatRoomsNow: ChatRoom[] = [];
-              chatRooms.map(async (chatRoom, i) => {
-                let length = await rc.getLengthInRoomUsers(chatRoom.id);
-                chatRoomsNow.push({ ...chatRoom, current: length });
-                if (maxlength == i) {
-                  io.to(socket.id).emit("chatRooms", {
-                    chatRooms: chatRoomsNow,
-                  });
+      if (!!c.nickname)
+        rc.getRoomidsInUser(c.nickname).then((roomids) => {
+          //#region Get ROOM
+          if (!arraysEqual(roomids, [])) {
+            let val = sql_room_get(roomids);
+            if (!!val && !!roomids)
+              db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => {
+                if (err || !chatRooms) {
+                  l.error(
+                    "error connecting: " + err.stack + " val:",
+                    val,
+                    " chatRooms:",
+                    chatRooms
+                  );
+                  return;
                 }
+                //현재인원 추가하기
+                let maxlength = chatRooms.length - 1;
+                let chatRoomsNow: ChatRoom[] = [];
+                chatRooms.map(async (chatRoom, i) => {
+                  let length = await rc.getLengthInRoomUsers(chatRoom.id);
+                  chatRoomsNow.push({ ...chatRoom, current: length });
+                  if (maxlength == i) {
+                    io.to(socket.id).emit("chatRooms", {
+                      chatRooms: chatRoomsNow,
+                    });
+                  }
+                });
               });
-            }
-          );
-        } else
-          io.to(socket.id).emit("chatRooms", {
-            chatRooms: [],
-          });
-        //#endregion Get ROOM
-      });
+          } else
+            io.to(socket.id).emit("chatRooms", {
+              chatRooms: [],
+            });
+          //#endregion Get ROOM
+        });
     });
     //#endregion 유저 방 목록 가져오기
 
@@ -100,7 +124,7 @@ export const socket = (io: any, db_conn: any) => {
     //#endregion appEnter 앱 접속
 
     //#region chat 사용자 채팅 전송
-        type ChatProps = {
+    type ChatProps = {
       room_id: string;
       nickname: string;
       msg: string;
@@ -111,7 +135,16 @@ export const socket = (io: any, db_conn: any) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
       //c.room_id
       l.info(
-         "chat " + c.room_id + " " + c.nickname + " " + c.msg + " " + c.msg_type + " " + socket.id 
+        "chat " +
+          c.room_id +
+          " " +
+          c.nickname +
+          " " +
+          c.msg +
+          " " +
+          c.msg_type +
+          " " +
+          socket.id
       );
       //socket 방안에 접속해 있는 유저에게 채팅전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) =>
@@ -121,7 +154,7 @@ export const socket = (io: any, db_conn: any) => {
               nickname: c.nickname,
               chatTime: new Date(),
               msg: c.msg,
-                   msg_type: c.msg_type,
+              msg_type: c.msg_type,
             })
           )
         )
@@ -151,7 +184,7 @@ export const socket = (io: any, db_conn: any) => {
           sql_message_insert(
             db_conn,
             c.msg,
-              c.msg_type,
+            c.msg_type,
             user_id,
             Number(c.room_id),
             user_id
@@ -242,6 +275,25 @@ export const socket = (io: any, db_conn: any) => {
           }
           io.to(socket.id).emit("chatRoomsInUsers", {
             chatUsers: chatUsers,
+          });
+        }
+      );
+    });
+    //#endregion 채팅방 정보 유저들 정보를 반환
+
+    //#region 유저 한명의 정보를 반환
+    socket.on("aUser", async (c: { user_nickname: string }) => {
+      db_conn.query(
+        sql_usernicknames([c.user_nickname]),
+        (err: any, User: any) => {
+          if (err) {
+            l.error(
+              "error aUser connecting: " + c.user_nickname + " " + err.stack
+            );
+            return;
+          }
+          io.to(socket.id).emit("aUser", {
+            User: User,
           });
         }
       );
