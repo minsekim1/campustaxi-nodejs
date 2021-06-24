@@ -83,7 +83,7 @@ export const socket = (io: any, db_conn: any) => {
           if (!arraysEqual(roomids, [])) {
             let val = sql_room_get(roomids);
             if (!!val && !!roomids)
-              db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => {
+              db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => { //ERROR
                 if (err || !chatRooms) {
                   l.error(
                     "error connecting: " + err.stack + " val:",
@@ -130,6 +130,7 @@ export const socket = (io: any, db_conn: any) => {
       msg: string;
       msg_type: string;
       firebaseToken: string;
+      icon?: string;
     };
     socket.on("chat", (c: ChatProps) => {
       // 방안에 모든 유저에게 메세지 및 알림을 전송
@@ -155,6 +156,7 @@ export const socket = (io: any, db_conn: any) => {
               chatTime: new Date(),
               msg: c.msg,
               msg_type: c.msg_type,
+              icon: c.icon
             })
           )
         )

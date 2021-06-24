@@ -123,12 +123,9 @@ const imageUpload = async (base64: any) => {
 
   // Generally we'd have an userId associated with the image
   // For this example, we'll simulate one
-  let nowtime = new Date();
-  const fileName =
-    nowtime.toLocaleDateString("en-KR") +
-    "_" +
-    nowtime.toLocaleTimeString("en-KR", { hour12: false });
-
+  let nowtime = new Date();  
+  const fileName = nowtime.getFullYear() + "/" + (nowtime.getMonth() + 1) + "/" + nowtime.getDate() + "/" + nowtime.toLocaleTimeString('en-KR', { hour12: false });
+  
   // With this setup, each time your user uploads an image, will be overwritten.
   // To prevent this, use a different Key each time.
   // This won't be needed if they're uploading their avatar, hence the filename, userAvatar.js.

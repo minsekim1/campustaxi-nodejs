@@ -1,1 +1,1 @@
-sudo lsof -t -i tcp:3000 | xargs kill -9
+sudo lsof -t -i tcp:3000 | sudo xargs kill -9
