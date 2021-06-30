@@ -80,36 +80,46 @@ export const socket = (io: any, db_conn: any) => {
       if (!!c.nickname)
         rc.getRoomidsInUser(c.nickname).then((roomids) => {
           //#region Get ROOM
-          if (!arraysEqual(roomids, [])) {
-            let val = sql_room_get(roomids);
-            if (!!val && !!roomids)
-              db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => { //ERROR
-                if (err || !chatRooms) {
-                  l.error(
-                    "error connecting: " + err.stack + " val:",
-                    val,
-                    " chatRooms:",
-                    chatRooms
-                  );
-                  return;
-                }
-                //현재인원 추가하기
-                let maxlength = chatRooms.length - 1;
-                let chatRoomsNow: ChatRoom[] = [];
-                chatRooms.map(async (chatRoom, i) => {
-                  let length = await rc.getLengthInRoomUsers(chatRoom.id);
-                  chatRoomsNow.push({ ...chatRoom, current: length });
-                  if (maxlength == i) {
-                    io.to(socket.id).emit("chatRooms", {
-                      chatRooms: chatRoomsNow,
-                    });
+            if (!arraysEqual(roomids, [])) {
+              let val = sql_room_get(roomids);
+              console.log("roomids:", roomids,"val:",val);
+              if (!!val && !!roomids)
+                db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => {
+                  //ERROR
+                  if (err) {
+                    l.error(
+                      "chatRooms connecting: err" + err.stack + " val:",
+                      val,
+                      " chatRooms:",
+                      chatRooms
+                    );
+                    return;
+                  } else if (!chatRooms) {
+                    l.error(
+                      "chatRooms connecting: no chatRooms" + err.stack + " val:",
+                      val,
+                      " chatRooms:",
+                      chatRooms
+                    );
+                    return;
                   }
+                  //현재인원 추가하기
+                  let maxlength = chatRooms.length - 1;
+                  let chatRoomsNow: ChatRoom[] = [];
+                  chatRooms.map(async (chatRoom, i) => {
+                    let length = await rc.getLengthInRoomUsers(chatRoom.id);
+                    chatRoomsNow.push({ ...chatRoom, current: length });
+                    if (maxlength == i) {
+                      io.to(socket.id).emit("chatRooms", {
+                        chatRooms: chatRoomsNow,
+                      });
+                    }
+                  });
                 });
+            } else
+              io.to(socket.id).emit("chatRooms", {
+                chatRooms: [],
               });
-          } else
-            io.to(socket.id).emit("chatRooms", {
-              chatRooms: [],
-            });
           //#endregion Get ROOM
         });
     });
@@ -156,7 +166,7 @@ export const socket = (io: any, db_conn: any) => {
               chatTime: new Date(),
               msg: c.msg,
               msg_type: c.msg_type,
-              icon: c.icon
+              icon: c.icon,
             })
           )
         )

@@ -8,8 +8,8 @@ let db = {
   password: db_info.password,
   database: db_info.database,
 };
-const MyAppModel = mysqlModel.createConnection(db);
+// const MyAppModel = mysqlModel.createConnection(db);
 
-export const Message = MyAppModel.extend({
-  tableName: "massage_tb",
-});
+// export const Message = MyAppModel.extend({
+//   tableName: "massage_tb",
+// });

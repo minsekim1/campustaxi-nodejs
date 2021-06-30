@@ -1,12 +1,10 @@
 import express from "express";
 import { dbconn } from "./config/mysql/database";
-import {  Message } from "./config/mysql/mysql-model/model";
 const app = express();
 const port = 3000;
 import { logger as l } from "./config/winston";
 import { premium_app } from "./module/premium/premium";
 import { socket } from "./module/socket/socket";
-import { sql_message_select } from "./types/Message";
 
 let isDisableKeepAlive = false;
 app.use((req: any, res: any, next: any) => {

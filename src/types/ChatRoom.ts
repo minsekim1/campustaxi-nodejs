@@ -11,10 +11,10 @@ export const sql_room_get = (roomids: string[]) => {
     });
     query += ");";
     return query;
-  } else return "";
+  } else return null;
 };
 export const sql_room_get_map =
-  "select r.created_at, r.id, r.start_address, r.start_address_code,r.start_address_detail,r.end_address,r.end_address_code,r.end_address_detail,r.end_lat,r.end_lon,start_lat,r.start_lon,r.boarding_dtm,r.personnel_limit,r.gender,r.category_id,u.imagepath, nickname as owner from campustaxi_db.rooms_tb as r, campustaxi_db.users_tb as u where r.owner_id=u.id and ((r.end_lat < (?) and r.end_lon < (?) and r.end_lat > (?) and r.end_lon> (?)) or (r.start_lat < (?) and r.start_lon < (?) and r.start_lat > (?) and r.start_lon > (?))) limit 100";
+  "select r.created_at, r.id, r.start_address, r.start_address_code,r.start_address_detail,r.end_address,r.end_address_code,r.end_address_detail,r.end_lat,r.end_lon,start_lat,r.start_lon,r.boarding_dtm,r.personnel_limit,r.gender,r.category_id,u.imagepath, nickname as owner from campustaxi_db.rooms_tb as r, campustaxi_db.users_tb as u where r.owner_id=u.id and ((r.end_lat < (?) and r.end_lon < (?) and r.end_lat > (?) and r.end_lon> (?)) or (r.start_lat < (?) and r.start_lon < (?) and r.start_lat > (?) and r.start_lon > (?))) ORDER BY r.boarding_dtm desc limit 100";
 /*
 
 //#region INSERT ROOM
