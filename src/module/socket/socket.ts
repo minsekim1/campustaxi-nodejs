@@ -37,7 +37,7 @@ export const socket = (io: any, db_conn: any) => {
     //#region chatEnter 채팅방 접속
     // data : c.room_id c.nickname
     socket.on("chatEnter", (c: any) => {
-      l.info("cE " + c.room_id + " " + c.nickname + " " + socket.id);
+      l.info("cEnter " + c.room_id + " " + c.nickname + " " + socket.id);
       chatEnter(c.nickname, c.room_id);
       // 채팅방 채팅 "들어갔음" 소켓 전송
       rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) => {
@@ -71,7 +71,7 @@ export const socket = (io: any, db_conn: any) => {
 
     //#region chatExit 채팅방 나가기
     socket.on("chatExit", (c: any) => {
-      l.info("cE " + c.room_id + " " + c.nickname);
+      l.info("cExit " + c.room_id + " " + c.nickname);
       chatExit(c.nickname, c.room_id);
     });
     //#endregion chatExit 채팅방 나가기
@@ -106,11 +106,12 @@ export const socket = (io: any, db_conn: any) => {
                   return;
                 }
                 //현재인원 추가하기
-                let maxlength = chatRooms.length - 1;
+                let maxlength = chatRooms.length - 1
                 let chatRoomsNow: ChatRoom[] = [];
                 chatRooms.map(async (chatRoom, i) => {
                   let length = await rc.getLengthInRoomUsers(chatRoom.id);
                   chatRoomsNow.push({ ...chatRoom, current: length });
+                  // console.log("length:",length,"i:",i,"val:",val,"chatRooms:",chatRooms.length)
                   if (maxlength == i) {
                     io.to(socket.id).emit("chatRooms", {
                       chatRooms: chatRoomsNow,

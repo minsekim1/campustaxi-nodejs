@@ -4,11 +4,12 @@ export const sql_room_insert =
 export const sql_room_get = (roomids: string[]) => {
   if (!!roomids[0]) {
     let query =
-      "select r.id, r.created_at, r.start_address, r.start_address_code, r.start_address_detail, r.end_address, r.end_address_code, r.end_address_detail, r.end_lat, r.end_lon, start_lat, r.start_lon, r.boarding_dtm, r.personnel_limit, r.gender, r.category_id, u.imagepath, nickname as owner from campustaxi_db.rooms_tb as r, campustaxi_db.users_tb as u where r.owner_id=u.id and r.id=" +
+      "select r.id, r.created_at, r.start_address, r.start_address_code, r.start_address_detail, r.end_address, r.end_address_code, r.end_address_detail, r.end_lat, r.end_lon, start_lat, r.start_lon, r.boarding_dtm, r.personnel_limit, r.gender, r.category_id, u.imagepath, nickname as owner from campustaxi_db.rooms_tb as r, campustaxi_db.users_tb as u where r.owner_id=u.id and (r.id = " +
       roomids[0];
     roomids.map((roomid, i) => {
       if (i != 0) query += " OR r.id=" + roomid;
     });
+    query += ");"
     return query;
   } else return null;
 };

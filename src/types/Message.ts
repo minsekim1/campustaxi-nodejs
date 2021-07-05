@@ -3,7 +3,7 @@ const sql_insert =
 const sql_select =
   "SELECT @rownum:=@rownum+1 as 'index', u.nickname as writer, m.massage as message, m.created_at, m.updated_at, m.room_id, u.imagepath, m.massage_type as message_type\
   FROM campustaxi_db.users_tb as u, campustaxi_db.massage_tb as m, (SELECT @rownum :=0) AS r \
-  where u.id = m.created_by_id and m.room_id = (?) order by m.created_at desc"
+  where u.id = m.created_by_id and m.room_id = (?) order by m.created_at"
 
 /*
   //#region INSERT MESSAGE
