@@ -80,6 +80,7 @@ export const Logout = (nickname: strOrNull) => {
       //@soc @tok delete
       rc.getUserTokId(nickname).then((tokid) => rc.removeToken(tokid));
       rc.getUserSocId(nickname).then((socid) => rc.removeSocket(socid));
+      rc.setUser(nickname, "", "");
       // rc.removeRoomidInUserAll(nickname); => 유저 방목록은 남김
       // rc.removeUser(nickname);
     });

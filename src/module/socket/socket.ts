@@ -80,46 +80,55 @@ export const socket = (io: any, db_conn: any) => {
       if (!!c.nickname)
         rc.getRoomidsInUser(c.nickname).then((roomids) => {
           //#region Get ROOM
-            if (!arraysEqual(roomids, [])) {
-              let val = sql_room_get(roomids);
-              console.log("roomids:", roomids,"val:",val);
-              if (!!val && !!roomids)
-                db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => {
-                  //ERROR
-                  if (err) {
-                    l.error(
-                      "chatRooms connecting: err" + err.stack + " val:",
-                      val,
-                      " chatRooms:",
-                      chatRooms
-                    );
-                    return;
-                  } else if (!chatRooms) {
-                    l.error(
-                      "chatRooms connecting: no chatRooms" + err.stack + " val:",
-                      val,
-                      " chatRooms:",
-                      chatRooms
-                    );
-                    return;
+          if (!arraysEqual(roomids, [])) {
+            let val = sql_room_get(roomids);
+            // console.log("roomids:", roomids, "val:", val);
+            if (
+              val !== undefined &&
+              val !== null &&
+              roomids !== null &&
+              roomids !== undefined
+            )
+              db_conn.query(val, (err: any, chatRooms: ChatRoom[]) => {
+                //ERROR
+                if (err) {
+                  l.error("chatRooms connecting: err val " + err.stack);
+                  console.log("val:", val);
+                  console.log("chatRooms:", chatRooms);
+                  return;
+                } else if (!chatRooms) {
+                  l.error(
+                    "chatRooms connecting: no chatRooms" + err.stack + " val:",
+                    val,
+                    " chatRooms:",
+                    chatRooms
+                  );
+                  return;
+                }
+                //현재인원 추가하기
+                let maxlength = chatRooms.length - 1;
+                let chatRoomsNow: ChatRoom[] = [];
+                chatRooms.map(async (chatRoom, i) => {
+                  let length = await rc.getLengthInRoomUsers(chatRoom.id);
+                  chatRoomsNow.push({ ...chatRoom, current: length });
+                  if (maxlength == i) {
+                    io.to(socket.id).emit("chatRooms", {
+                      chatRooms: chatRoomsNow,
+                    });
                   }
-                  //현재인원 추가하기
-                  let maxlength = chatRooms.length - 1;
-                  let chatRoomsNow: ChatRoom[] = [];
-                  chatRooms.map(async (chatRoom, i) => {
-                    let length = await rc.getLengthInRoomUsers(chatRoom.id);
-                    chatRoomsNow.push({ ...chatRoom, current: length });
-                    if (maxlength == i) {
-                      io.to(socket.id).emit("chatRooms", {
-                        chatRooms: chatRoomsNow,
-                      });
-                    }
-                  });
                 });
-            } else
-              io.to(socket.id).emit("chatRooms", {
-                chatRooms: [],
+                if (chatRoomsNow.length === 0) {
+                  io.to(socket.id).emit("chatRooms", {
+                    chatRooms: [],
+                  });
+                }
               });
+          } else {
+            // console.log("Rooms NULL");
+            io.to(socket.id).emit("chatRooms", {
+              chatRooms: [],
+            });
+          }
           //#endregion Get ROOM
         });
     });
@@ -213,9 +222,16 @@ export const socket = (io: any, db_conn: any) => {
     socket.on("disconnect", () => {
       l.info("disc " + socket.id);
       //socet to token
-      rc.getNicknameBySocket(socket.id).then((nickname) =>
-        chatClose(socket.id, nickname)
-      );
+      rc.getNicknameBySocket(socket.id).then((nickname) => {
+        if (!nickname) return;
+        rc.getRoomidsInUser(nickname).then((rooms) =>
+          rooms.map((room) => chatClose(nickname, room))
+        );
+      });
+      // rc.getUserAll()
+      //   (socket.id).then((nickname) =>
+      //   chatClose(nickname, nickname)
+      // );
       //socket delete
       rc.removeSocket(socket.id);
     });
@@ -238,6 +254,7 @@ export const socket = (io: any, db_conn: any) => {
         maxLon: number;
       }) => {
         //#region Get ROOM map
+
         db_conn.query(
           sql_room_get_map,
           [
@@ -253,6 +270,18 @@ export const socket = (io: any, db_conn: any) => {
           (err: any, chatRooms: ChatRoom[]) => {
             if (err) {
               l.error("error connecting: " + err.stack);
+              l.error("sql_room_get_map:", sql_room_get_map);
+              l.error(
+                "lat lon:",
+                c.maxLat,
+                c.maxLon,
+                c.minLat,
+                c.minLon,
+                c.maxLat,
+                c.maxLon,
+                c.minLat,
+                c.minLon
+              );
               return;
             }
             //현재인원 추가하기

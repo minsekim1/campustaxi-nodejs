@@ -1,4 +1,6 @@
 import { dbconn } from "../../config/mysql/database";
+import { l } from "../../config/redis/redis_test";
+import { logger } from "../../config/winston";
 
 const sql_select =
   "SELECT u.imagepath as imagepath\
@@ -51,13 +53,13 @@ export function premium_app(app: any) {
     let email = req.body.email;
 
     var resultItems = await sql_profile_select(dbconn, email);
+    // console.log("getProfileIcon resultItems",resultItems)
     res.send(resultItems);
   });
 
   app.post("/updateProfileIcon", async function (req: any, res: any) {
     let email = req.body.email;
     let imagepath = req.body.imagepath;
-
     var resultItems = await sql_profile_update(dbconn, email, imagepath);
     res.send(resultItems);
   });
@@ -166,9 +168,11 @@ export const sql_profile_select = async (
 ): Promise<string> => {
   return new Promise(async (resolve) => {
     if (id)
-      dbconn.query(sql_select, id, (err: any, results: any) => {
+      db_conn.query(sql_select, [id], (err: any, results: any) => {
         if (err) {
-          console.error("error connecting: " + err.stack);
+          logger.warn("error query:" + sql_select);
+          logger.warn("error query id:" + id);
+          logger.warn("error connecting: " + err.stack);
           resolve(err);
         }
         resolve(results);
@@ -182,7 +186,7 @@ export const sql_profile_update = async (
   profile_path: string
 ): Promise<string> => {
   return new Promise(async (resolve) => {
-    dbconn.query(
+    db_conn.query(
       sql_update,
       [profile_path, email],
       (err: any, results: any) => {
