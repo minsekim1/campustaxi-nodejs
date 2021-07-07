@@ -5,12 +5,12 @@ import { logger } from "../../config/winston";
 const sql_select =
   "SELECT u.imagepath as imagepath\
   FROM campustaxi_db.users_tb as u\
-  where u.email = (?)";
+  where u.nickname = (?)";
 
 const sql_update =
   "UPDATE campustaxi_db.users_tb as u\
     SET u.imagepath = (?)\
-    where u.email = (?)";
+    where u.nickname = (?)";
 
 const sql_theme_select =
   "SELECT t.*\
@@ -50,17 +50,17 @@ export function premium_app(app: any) {
   });
 
   app.post("/getProfileIcon", async function (req: any, res: any) {
-    let email = req.body.email;
+    let nickname = req.body.nickname;
 
-    var resultItems = await sql_profile_select(dbconn, email);
+    var resultItems = await sql_profile_select(dbconn, nickname);
     // console.log("getProfileIcon resultItems",resultItems)
     res.send(resultItems);
   });
 
   app.post("/updateProfileIcon", async function (req: any, res: any) {
-    let email = req.body.email;
+    let nickname = req.body.nickname;
     let imagepath = req.body.imagepath;
-    var resultItems = await sql_profile_update(dbconn, email, imagepath);
+    var resultItems = await sql_profile_update(dbconn, nickname, imagepath);
     res.send(resultItems);
   });
 
@@ -182,13 +182,13 @@ export const sql_profile_select = async (
 
 export const sql_profile_update = async (
   db_conn: any,
-  email: string,
+  nickname: string,
   profile_path: string
 ): Promise<string> => {
   return new Promise(async (resolve) => {
     db_conn.query(
       sql_update,
-      [profile_path, email],
+      [profile_path, nickname],
       (err: any, results: any) => {
         if (err) {
           console.error("error connecting: " + err.stack);
