@@ -44,16 +44,13 @@ export function premium_app(app: any) {
 
   app.post("/getRoomTheme", async function (req: any, res: any) {
     let roomid = req.body.roomid;
-
     var resultTheme = await sql_theme_get(dbconn, roomid);
     res.send(resultTheme);
   });
 
   app.post("/getProfileIcon", async function (req: any, res: any) {
     let nickname = req.body.nickname;
-
     var resultItems = await sql_profile_select(dbconn, nickname);
-    // console.log("getProfileIcon resultItems",resultItems)
     res.send(resultItems);
   });
 
@@ -65,7 +62,6 @@ export function premium_app(app: any) {
   });
 
   app.post("/uploadPhoto", async function (req: any, res: any) {
-    console.log(req);
     res.send(await imageUpload(req.body.imageBase64));
     res.status(200);
   });
@@ -75,7 +71,6 @@ export function premium_app(app: any) {
   });
 
   app.post("/api", function (req: any, res: any, next: any) {
-    console.log(req.body);
     return res.json(req.body);
   });
 }
@@ -154,7 +149,7 @@ const imageUpload = async (base64: any) => {
 
   // Save the Location (url) to your database and Key if needs be.
   // As good developers, we should return the url and let other function do the saving to database etc
-  console.log(location, key);
+  // console.log(location, key);
 
   return location;
 
