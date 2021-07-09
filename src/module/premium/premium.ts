@@ -1,5 +1,4 @@
 import { dbconn } from "../../config/mysql/database";
-import { l } from "../../config/redis/redis_test";
 import { logger } from "../../config/winston";
 
 const sql_select =
@@ -17,6 +16,9 @@ const sql_theme_select =
     FROM campustaxi_db.rooms_tb as r\
     NATURAL JOIN theme_tb as t\
     WHERE r.id = (?)";
+
+const sql_preview_select =
+  "SELECT theme, previewimg FROM campustaxi_db.theme_tb";
 
 const express = require("express");
 const next = require("next");
@@ -51,6 +53,11 @@ export function premium_app(app: any) {
   app.post("/getProfileIcon", async function (req: any, res: any) {
     let nickname = req.body.nickname;
     var resultItems = await sql_profile_select(dbconn, nickname);
+    res.send(resultItems);
+  });
+
+  app.post("/getThemePreview", async function (req: any, res: any) {
+    var resultItems = await sql_preview_get(dbconn);
     res.send(resultItems);
   });
 
@@ -201,6 +208,19 @@ export const sql_theme_get = async (
 ): Promise<string> => {
   return new Promise(async (resolve) => {
     db_conn.query(sql_theme_select, [room_id], (err: any, results: any) => {
+      if (err) {
+        console.error("error connecting: " + err.stack);
+        resolve(err);
+      }
+      resolve(results);
+    });
+  });
+};
+export const sql_preview_get = async (
+  db_conn: any,
+): Promise<string> => {
+  return new Promise(async (resolve) => {
+    db_conn.query(sql_preview_select, [], (err: any, results: any) => {
       if (err) {
         console.error("error connecting: " + err.stack);
         resolve(err);
