@@ -125,11 +125,7 @@ export const socket = (io: any, db_conn: any) => {
                     chatRooms: [],
                   });
                 }
-                if (chatRoomsNow.length === 0) {
-                  io.to(socket.id).emit("chatRooms", {
-                    chatRooms: [],
-                  });
-                }
+               
               });
           } else {
             // console.log("Rooms NULL");
