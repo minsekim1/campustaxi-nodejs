@@ -40,9 +40,9 @@ export const socket = (io: any, db_conn: any) => {
       l.info("cEnter " + c.room_id + " " + c.nickname + " " + socket.id);
       chatEnter(c.nickname, c.room_id);
       // 채팅방 채팅 "들어갔음" 소켓 전송
-      rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) => {
-        nicknames.map((nickname) =>
-          rc.getUserSocId(nickname).then((socid) =>
+      rc.getNicknamesInRoomSocket(c.room_id).then((nicknames:any) => {
+        nicknames.map((nickname:any) =>
+          rc.getUserSocId(nickname).then((socid:any) =>
             io.to(socid).emit("chatEnter", {
               nickname: c.nickname,
               date: new Date(),
@@ -78,7 +78,7 @@ export const socket = (io: any, db_conn: any) => {
     //#region 유저 방 목록 가져오기
     socket.on("chatRooms", (c: { nickname: string }) => {
       if (!!c.nickname)
-        rc.getRoomidsInUser(c.nickname).then((roomids) => {
+        rc.getRoomidsInUser(c.nickname).then((roomids:any) => {
           //#region Get ROOM
           if (!arraysEqual(roomids, [])) {
             let val = sql_room_get(roomids);
@@ -171,9 +171,9 @@ export const socket = (io: any, db_conn: any) => {
           socket.id
       );
       //socket 방안에 접속해 있는 유저에게 채팅전송
-      rc.getNicknamesInRoomSocket(c.room_id).then((nicknames) =>
-        nicknames.map((nickname) =>
-          rc.getUserSocId(nickname).then((socid) =>
+      rc.getNicknamesInRoomSocket(c.room_id).then((nicknames:any) =>
+        nicknames.map((nickname:any) =>
+          rc.getUserSocId(nickname).then((socid:any) =>
             io.to(socid).emit("chat", {
               nickname: c.nickname,
               chatTime: new Date(),
@@ -186,9 +186,9 @@ export const socket = (io: any, db_conn: any) => {
       );
 
       //token은 현재 채팅을하진 않지만 들어가 있는 채팅방 멤버 => FCM알림
-      rc.getNicknamesInRoomToken(c.room_id).then((nicknames) =>
-        nicknames.map((nickname) =>
-          rc.getUserTokId(nickname).then((tokid) =>
+      rc.getNicknamesInRoomToken(c.room_id).then((nicknames:any) =>
+        nicknames.map((nickname:any) =>
+          rc.getUserTokId(nickname).then((tokid:any) =>
             send({
               clientToken: tokid,
               title: c.nickname,
@@ -226,10 +226,10 @@ export const socket = (io: any, db_conn: any) => {
     socket.on("disconnect", () => {
       l.info("disc " + socket.id);
       //socet to token
-      rc.getNicknameBySocket(socket.id).then((nickname) => {
+      rc.getNicknameBySocket(socket.id).then((nickname:any) => {
         if (!nickname) return;
-        rc.getRoomidsInUser(nickname).then((rooms) =>
-          rooms.map((room) => chatClose(nickname, room))
+        rc.getRoomidsInUser(nickname).then((rooms:any) =>
+          rooms.map((room:any) => chatClose(nickname, room))
         );
       });
       // rc.getUserAll()
@@ -368,13 +368,13 @@ export const socket = (io: any, db_conn: any) => {
         rc.removeNicknameInRoomToken(c.room_id, c.nickname);
         rc.removeRoomidInUser(c.nickname, c.room_id);
         //강퇴 당한 사람에게 소켓전송
-        rc.getUserSocId(c.nickname).then((socid) =>
+        rc.getUserSocId(c.nickname).then((socid:any) =>
           io
             .to(socid)
             .emit("kicked", { hostname: c.hostname, room_id: c.room_id })
         );
         //강퇴 당한 사람에게 FCM전송
-        rc.getUserTokId(c.nickname).then((tokid) =>
+        rc.getUserTokId(c.nickname).then((tokid:any) =>
           send({
             clientToken: tokid,
             title: c.hostname + " 유저의 방",
@@ -395,8 +395,8 @@ export const socket = (io: any, db_conn: any) => {
               l.error("error connecting: " + err.stack);
               return;
             }
-            nicknames.map((nickname) =>
-              rc.getUserSocId(nickname).then((socid) =>
+            nicknames.map((nickname:any) =>
+              rc.getUserSocId(nickname).then((socid:any) =>
                 io.to(socket.id).emit("chatRoomsInUsers", {
                   chatUsers: chatUsers,
                 })

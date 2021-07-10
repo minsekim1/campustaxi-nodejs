@@ -218,7 +218,7 @@ export const sql_theme_get = async (
 };
 export const sql_preview_get = async (
   db_conn: any,
-): Promise<string> => {
+): Promise<any> => {
   return new Promise(async (resolve) => {
     db_conn.query(sql_preview_select, [], (err: any, results: any) => {
       if (err) {
