@@ -3,6 +3,7 @@ import { dbconn } from "./config/mysql/database";
 const app = express();
 const port = 3000;
 import { logger as l } from "./config/winston";
+import { api_app } from "./module/api/api";
 import { premium_app } from "./module/premium/premium";
 import { socket } from "./module/socket/socket";
 
@@ -24,6 +25,7 @@ const server = app.listen(port, () => {
   const io = require("socket.io")(server);
   socket(io, dbconn)
   premium_app(app);
+  api_app(app);
   //#endregion Socket APIs
 });
 
