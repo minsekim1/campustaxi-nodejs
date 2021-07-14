@@ -222,7 +222,7 @@ export const sql_preview_get = async (
   return new Promise(async (resolve) => {
     db_conn.query(sql_preview_select, [], (err: any, results: any) => {
       if (err) {
-        console.error("error connecting: " + err.stack);
+        console.error("error connecting sql_preview_get: " + err.stack);
         resolve(err);
       }
       resolve(results);
