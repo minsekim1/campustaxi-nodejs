@@ -114,7 +114,7 @@ export const socket = (io: any, db_conn: any) => {
                       );
                       return;
                     }
-                    if (chatRooms.length === 0)
+                    if (chatRooms.length === 0 || chatRooms.length === undefined || chatRooms.length === null)
                       io.to(socket.id).emit("chatRooms", {
                         chatRooms: [],
                       });
@@ -135,6 +135,9 @@ export const socket = (io: any, db_conn: any) => {
                   }
                 } catch (e: any) {
                   logger.warn("chatRooms Err:" + e);
+                  io.to(socket.id).emit("chatRooms", {
+                    chatRooms: [],
+                  });
                 }
               });
           } else {
@@ -328,6 +331,9 @@ export const socket = (io: any, db_conn: any) => {
                 });
               } catch (e: any) {
                 logger.warn("chatRooms Err:" + e);
+                 io.to(socket.id).emit("chatRoomsInMap", {
+                      chatRooms: [],
+                    });
               }
             }
           );
