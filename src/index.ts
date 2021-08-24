@@ -22,10 +22,10 @@ const server = app.listen(port, () => {
   l.info(`server is listening on port ${port} `);
 
   //#region Socket APIs
-  const io = require("socket.io")(server);
-  socket(io, dbconn)
-  premium_app(app);
-  api_app(app);
+  // const io = require("socket.io")(server);
+  // socket(io, dbconn)
+  // premium_app(app);
+  // api_app(app);
   //#endregion Socket APIs
 });
 
