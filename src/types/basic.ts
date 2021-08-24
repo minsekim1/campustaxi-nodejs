@@ -1,0 +1,1 @@
+export type strOrNull = null | string | undefined;

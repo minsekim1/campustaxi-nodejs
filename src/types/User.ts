@@ -4,7 +4,7 @@ const sql_usernickname =
   "SELECT nickname FROM campustaxi_db.users_tb WHERE id=(?) LIMIT 1;";
 export const sql_usernicknames = (nicknames: string[]) => {
   let query = 
-    "SELECT nickname, uuid, gender, campus_name, imagepath FROM campustaxi_db.users_tb WHERE nickname=\'"+nicknames[0]+"\'";
+    "SELECT id, nickname, uuid, gender, campus_name, imagepath FROM campustaxi_db.users_tb WHERE nickname=\'"+nicknames[0]+"\'";
   nicknames.map((nickname, i) => 
   {
     if (i!=0)
